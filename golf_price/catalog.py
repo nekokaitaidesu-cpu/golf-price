@@ -150,14 +150,18 @@ CATALOG: list[DriverModel] = [
     # ============ ブリヂストン ============
     DriverModel("bs_jgr", "ブリヂストン", "TOUR B JGR", "2021",
                 "ブリヂストン TOUR B JGR ドライバー", ["jgr"], []),
+    # 旧Jシリーズ（J715 B3/B5 等）や TOUR B XD と混同しないよう除外
     DriverModel("bs_b1", "ブリヂストン", "B1", "2022",
-                "ブリヂストン B1 ドライバー", ["ブリヂストン|bridgestone", "b1"], ["b1st"]),
+                "ブリヂストン B1 ドライバー", ["ブリヂストン|bridgestone", "b1"],
+                ["b1st", "j715", "j815", "xd", "tourb"]),
     DriverModel("bs_b2", "ブリヂストン", "B2", "2022",
-                "ブリヂストン B2 ドライバー", ["ブリヂストン|bridgestone", "b2"], ["b2ht"]),
+                "ブリヂストン B2 ドライバー", ["ブリヂストン|bridgestone", "b2"],
+                ["b2ht", "j715", "j815", "xd", "tourb"]),
     DriverModel("bs_b1st", "ブリヂストン", "B1ST", "2022",
-                "ブリヂストン B1ST ドライバー", ["b1st"], []),
+                "ブリヂストン B1ST ドライバー", ["b1st"], ["j715", "j815"]),
     DriverModel("bs_b3", "ブリヂストン", "B3", "2024",
-                "ブリヂストン B3 ドライバー", ["ブリヂストン|bridgestone", "b3"], []),
+                "ブリヂストン B3 ドライバー", ["ブリヂストン|bridgestone", "b3"],
+                ["j715", "j815", "xd", "tourb"]),
 
     # ============ ダンロップ スリクソン ZX ============
     DriverModel("sx_zx5", "スリクソン", "ZX5", "2021",

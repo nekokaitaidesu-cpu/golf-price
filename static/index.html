@@ -86,6 +86,9 @@
   .ranktable .profit { font-weight:800; }
   .ranktable .profit.win { color:var(--accent); } .ranktable .profit.loss { color:#ff7a85; }
   .ranktable .pending { color:var(--warn); }
+  .ranktable td.usedmin a { color:var(--accent2); text-decoration:none; }
+  .ranktable td.usedmin .src { font-size:10px; color:var(--muted); margin-top:2px; line-height:1.3; max-width:160px; }
+  .ranktable td.usedmin .ho { font-size:10px; color:var(--warn); margin-left:5px; }
   .rankhead { font-size:13px; color:var(--muted); margin-bottom:8px; }
   .rankhead .back { color:var(--accent2); cursor:pointer; margin-left:8px; }
   .catpicks { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px; margin-top:6px; }
@@ -320,15 +323,22 @@ function drawRanking(rows){
     const cls = !has?"":(r.profit>=0?"win":"loss");
     const ptxt = !has?`<span class="pending">データ不足</span>`
       : `${r.profit>=0?'＋':'−'}${yen(Math.abs(r.profit))}`;
+    const shop = (r.used_min_shop||"").replace(/</g,"&lt;");
+    const minCell = r.used_min==null ? "—" :
+      `<a href="${r.used_min_url||'#'}" target="_blank" rel="noopener">${yen(r.used_min)}</a>`
+      + (r.used_min_head_only?`<span class="ho">ヘッドのみ</span>`:``)
+      + (shop?`<div class="src">${shop}</div>`:``);
     return `<tr data-key="${r.key}">
       <td class="rank">${i+1}</td>
       <td class="model">${r.label}<div class="brand">${r.brand}・${r.year}　中古${r.used_count}/フリマ${r.flea_count}件</div></td>
-      <td>${yen(r.used_min)}</td>
+      <td class="usedmin">${minCell}</td>
       <td>${yen(r.flea_avg)}</td>
       <td class="profit ${cls}">${ptxt}</td></tr>`;
   }).join("");
   document.querySelectorAll("#rankbody tr").forEach(tr=>{
     tr.onclick = ()=>{ $("#model").value = tr.dataset.key; search(false); };
+    // 出品リンクのクリックは行の詳細遷移を発火させない
+    tr.querySelectorAll("a").forEach(a=> a.onclick = e=> e.stopPropagation());
   });
 }
 

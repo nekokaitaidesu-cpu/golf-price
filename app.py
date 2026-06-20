@@ -78,10 +78,14 @@ def api_ranking_one(key: str):
         cache.put(ck, d)
     m = CATALOG_BY_KEY[key]
     g = d.get("gap") or {}
+    cheapest = (d.get("used_samples") or [{}])[0]   # 最安の出品（価格昇順の先頭）
     return {
         "key": key, "label": f"{m.brand} {m.label}", "brand": m.brand, "year": m.year,
         "category": m.category,
         "used_min": d["used"]["min"], "used_avg": d["used"]["avg"], "used_count": d["used"]["count"],
+        "used_min_shop": cheapest.get("shop", ""),
+        "used_min_url": cheapest.get("url", ""),
+        "used_min_head_only": cheapest.get("head_only", False),
         "flea_avg": d["flea_sold"]["avg"], "flea_count": d["flea_sold"]["count"],
         "profit": g.get("profit"),
     }
@@ -110,7 +114,7 @@ def api_search(
     refresh: bool = Query(False),
 ):
     """検索して①中古平均・②最安値・③フリマ実売平均を集計して返す。"""
-    if model not in MODELS and model not in registry.load():
+    if model not in CATALOG_BY_KEY and model not in MODELS and model not in registry.load():
         return JSONResponse({"error": f"unknown model: {model}"}, status_code=400)
 
     key = f"{model}_p{pages}"

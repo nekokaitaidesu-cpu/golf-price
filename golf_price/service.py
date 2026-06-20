@@ -277,6 +277,15 @@ def _catalog_match(title: str, m: DriverModel) -> bool:
     return True
 
 
+def _drop_low_outliers(items: list[Listing], frac: float = 0.35) -> list[Listing]:
+    """中央値の frac 未満の極端な安値を除外（別モデル/部品/ジャンクの誤マッチ対策）。"""
+    if len(items) < 4:
+        return items
+    med = statistics.median([i.price for i in items])
+    floor = med * frac
+    return [i for i in items if i.price >= floor]
+
+
 def run_catalog_model(m: DriverModel, pages: int = 2) -> dict:
     """カタログ機種（キーワード方式）を 中古=楽天 / フリマ=Yahoo で集計。"""
     used: list[Listing] = []
@@ -290,6 +299,10 @@ def run_catalog_model(m: DriverModel, pages: int = 2) -> dict:
         if (l.price >= MIN_FLEA_PRICE and not is_parts_junk(l.title)
                 and _catalog_match(l.title, m)):
             sold.append(l)
+
+    # 極端な安値（別モデル誤マッチ・部品）を除外してから集計
+    used = _drop_low_outliers(used)
+    sold = _drop_low_outliers(sold)
 
     u = _stats([x.price for x in used])
     f = _stats([x.price for x in sold])
