@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# 実行時データ・キャッシュ・ログ（生成物なので管理しない）
+.cache/
+refresh.log
+history.db
+history.csv
+
+# ユーザーが追加した機種（実行時データ）
+user_models.json
+
+# 認証情報など（誤コミット防止）
+service_account.json
+*.key
+
+# OS
+Thumbs.db
+.DS_Store

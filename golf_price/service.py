@@ -1,0 +1,335 @@
+"""検索→名寄せ→グレード分類→統計集計のオーケストレーション。"""
+
+import statistics
+from collections import defaultdict
+
+from .spec import MODELS, DEFAULT_MODEL_KEY, ModelSpec
+from .normalize import analyze, normalize, detect_head_only, is_parts_junk, compact, extract_loft
+from .scrapers import rakuten, golfpartner, yahoo_auction
+from .scrapers.base import Listing
+from . import flea
+from .catalog import DriverModel, CATALOG, CATALOG_BY_KEY
+
+# ドライバー本体としてあり得ない安値（部品等）を弾く下限
+MIN_FLEA_PRICE = 3000
+MIN_USED_PRICE = 5000
+
+# 試算パラメータ（フリマ手数料・送料）
+FEE_RATE = 0.10      # フリマ手数料10%（中古最安に対して ×0.9）
+SHIPPING = 1700      # 送料（円）
+
+
+def _gap(used_min, flea_avg) -> dict | None:
+    """試算: フリマ実売平均×(1−手数料) − 送料 − 中古最安値。
+
+    手数料はフリマ売値にかかる。値が正なら利益、負なら損。
+    """
+    if used_min is None or flea_avg is None:
+        return None
+    profit = round(flea_avg * (1 - FEE_RATE) - SHIPPING - used_min)
+    return {
+        "profit": profit,
+        "used_min": used_min,
+        "flea_avg": flea_avg,
+        "fee_rate": FEE_RATE,
+        "shipping": SHIPPING,
+    }
+
+
+def _build_keywords(spec: ModelSpec) -> list[str]:
+    """検索に投げるキーワード（代表的な表記をいくつか）。"""
+    brand = spec.brand[0]
+    model = spec.model[0]
+    return [
+        f"{brand} {model} Ai SMOKE ドライバー 中古",
+        f"パラダイム Ai SMOKE ドライバー 中古",
+    ]
+
+
+def collect_listings(spec: ModelSpec, pages: int = 2) -> list[Listing]:
+    """全ソースから出品を収集し、名寄せ・グレード判定して該当機種のみ返す。"""
+    raw: list[Listing] = []
+    seen = set()
+    for kw in _build_keywords(spec):
+        for lst in rakuten.search(kw, pages=pages):
+            key = (lst.source, lst.url, lst.price)
+            if key in seen:
+                continue
+            seen.add(key)
+            raw.append(lst)
+
+    matched: list[Listing] = []
+    for lst in raw:
+        info = analyze(lst.title, spec)
+        if not info["matched"]:
+            continue
+        lst.grade_key = info["grade_key"] or ""
+        lst.grade_label = info["grade_label"] or ""
+        lst.head_only = info["head_only"]
+        matched.append(lst)
+
+    # --- ゴルフパートナー: model_code がある グレードは固有IDで正確に取得 ---
+    for g in spec.grades:
+        if not g.gp_model_code:
+            continue
+        for lst in golfpartner.search_by_model_code(g.gp_model_code, pages=1):
+            key = (lst.source, lst.url, lst.price)
+            if key in seen:
+                continue
+            seen.add(key)
+            # model_code 一致＝グレード確定なので分類をスキップして直接付与
+            lst.grade_key = g.key
+            lst.grade_label = g.label
+            lst.head_only = detect_head_only(normalize(lst.title))
+            matched.append(lst)
+
+    # --- フリマ実売（Yahoo落札相場）: キーワード検索→名寄せ＆ノイズ除去 ---
+    for kw in _build_keywords(spec):
+        for lst in yahoo_auction.search_closed(kw.replace(" 中古", ""), pages=2):
+            if lst.price < MIN_FLEA_PRICE or is_parts_junk(lst.title):
+                continue
+            key = (lst.source, lst.url, lst.price)
+            if key in seen:
+                continue
+            info = analyze(lst.title, spec)
+            if not info["matched"]:
+                continue
+            seen.add(key)
+            lst.grade_key = info["grade_key"] or ""
+            lst.grade_label = info["grade_label"] or ""
+            lst.head_only = info["head_only"]
+            # sold=True は scraper 側で設定済み
+            matched.append(lst)
+
+    return matched
+
+
+def _stats(prices: list[int]) -> dict:
+    if not prices:
+        return {"count": 0, "avg": None, "min": None, "max": None, "median": None}
+    return {
+        "count": len(prices),
+        "avg": round(statistics.mean(prices)),
+        "min": min(prices),
+        "max": max(prices),
+        "median": round(statistics.median(prices)),
+    }
+
+
+def _samples(items: list[Listing], limit: int = 40) -> list[dict]:
+    return sorted(
+        ({"price": i.price, "title": i.title, "url": i.url, "shop": i.shop,
+          "loft": i.loft, "head_only": i.head_only, "sold": i.sold}
+         for i in items),
+        key=lambda x: x["price"],
+    )[:limit]
+
+
+def summarize(listings: list[Listing]) -> dict:
+    """グレード別・全体の統計を作る。
+
+    返す3指標:
+      used_avg      : ①中古価格 平均（販売中の中古出品）
+      used_min      : ②最安値（中古出品の最小）
+      flea_sold_avg : ③フリマ実売 平均（sold=True の実売データ。今はソース未実装なら None）
+    """
+    by_grade = defaultdict(list)
+    for lst in listings:
+        by_grade[(lst.grade_key, lst.grade_label)].append(lst)
+
+    grades_out = []
+    for (gkey, glabel), items in sorted(by_grade.items(), key=lambda kv: kv[0][0]):
+        used_items = [i for i in items if i.is_used and not i.sold]
+        sold_items = [i for i in items if i.sold]
+        used = _stats([i.price for i in used_items])
+        sold = _stats([i.price for i in sold_items])
+        grades_out.append({
+            "grade_key": gkey,
+            "grade_label": glabel,
+            "used": used,
+            "flea_sold": sold,
+            "gap": _gap(used["min"], sold["avg"]),
+            "head_only_count": sum(1 for i in items if i.head_only),
+            "used_samples": _samples(used_items),
+            "flea_samples": _samples(sold_items),
+        })
+
+    all_used = _stats([i.price for i in listings if i.is_used and not i.sold])
+    all_sold = _stats([i.price for i in listings if i.sold])
+    return {
+        "total_listings": len(listings),
+        "headline": {
+            "used_avg": all_used["avg"],     # ①
+            "used_min": all_used["min"],     # ②
+            "flea_sold_avg": all_sold["avg"],  # ③
+            "gap": _gap(all_used["min"], all_sold["avg"]),
+        },
+        "overall_used": all_used,
+        "overall_flea_sold": all_sold,
+        "grades": grades_out,
+    }
+
+
+def _loft_sort_key(loft: str):
+    try:
+        return (0, float(loft))
+    except ValueError:
+        return (1, 0.0)  # "不明" 等は末尾
+
+
+def _loft_block(loft_label: str, items: list[Listing]) -> dict:
+    used_items = [i for i in items if i.is_used and not i.sold]
+    sold_items = [i for i in items if i.sold]
+    used = _stats([i.price for i in used_items])
+    sold = _stats([i.price for i in sold_items])
+    return {
+        "loft": loft_label,
+        "used": used,
+        "flea_sold": sold,
+        "gap": _gap(used["min"], sold["avg"]),
+        "head_only_count": sum(1 for i in items if i.head_only),
+        "used_samples": _samples(used_items),
+        "flea_samples": _samples(sold_items),
+    }
+
+
+def _run_user_model(entry: dict, pages: int) -> dict:
+    """ユーザー追加モデル（model_code固定・単一機種）をロフト別に集計。"""
+    # 全ロフトを網羅するため全ページ巡回（中古ショップ＝ゴルフパートナー）
+    listings = golfpartner.fetch_all(entry["gp_model_code"], path=entry.get("gp_path"))
+    for l in listings:
+        l.head_only = detect_head_only(normalize(l.title))
+
+    # フリマ実売（Yahoo落札相場）をラベルから検索して取り込み
+    kw, req, brands = flea.params_from_label(entry["label"])
+    sold_listings = flea.collect(kw, req, brands, min_price=MIN_FLEA_PRICE, pages=2)
+    for l in sold_listings:
+        l.head_only = detect_head_only(normalize(l.title))
+    listings = listings + sold_listings
+
+    by_loft = defaultdict(list)
+    for l in listings:
+        by_loft[l.loft or "不明"].append(l)
+
+    # 先頭は「すべて」、以降はロフト昇順
+    blocks = [_loft_block("すべて", listings)]
+    for loft in sorted(by_loft.keys(), key=_loft_sort_key):
+        blocks.append(_loft_block(loft, by_loft[loft]))
+
+    return {
+        "model_key": entry["key"],
+        "model_label": entry["label"],
+        "user_added": True,
+        "mode": "loft",
+        "total_listings": len(listings),
+        "lofts": blocks,
+        # 既定（すべて）の見出し
+        "headline": {
+            "used_avg": blocks[0]["used"]["avg"],
+            "used_min": blocks[0]["used"]["min"],
+            "flea_sold_avg": blocks[0]["flea_sold"]["avg"],
+            "gap": blocks[0]["gap"],
+        },
+    }
+
+
+# カテゴリごとの「クラブ種別」を示す語（いずれか含む必要）
+CLUB_TOKENS = {
+    "driver": ["ドライバー", "driver"],
+    "fw": ["フェアウェイ", "フェアウエイ", "fairway"],
+    "ut": ["ユーティリティ", "utility", "ハイブリッド", "hybrid", "レスキュー", "rescue"],
+    "iron": ["アイアン", "iron"],
+}
+# どのカテゴリでも除外したい別クラブ種別
+_ALWAYS_EXCLUDE_CLUB = ["ウェッジ", "wedge", "パター", "putter"]
+
+
+def _catalog_match(title: str, m: DriverModel) -> bool:
+    """圧縮キー照合。required/excludes の各要素は '|' で代替（OR）を書ける。
+
+    例: required=["ブリヂストン|bridgestone", "b2"] は
+        「(ブリヂストン or bridgestone) かつ b2」を要求。
+    カテゴリ（driver/fw/ut/iron）の種別語を要求し、他カテゴリ語は除外する。
+    """
+    c = compact(title)
+    # 当該カテゴリの種別語が必須
+    club = [compact(t) for t in CLUB_TOKENS.get(m.category, CLUB_TOKENS["driver"])]
+    if not any(t in c for t in club):
+        return False
+    # 他カテゴリの種別語が入っていたら別クラブ品として除外
+    for cat, toks in CLUB_TOKENS.items():
+        if cat == m.category:
+            continue
+        if any(compact(t) in c for t in toks):
+            return False
+    if any(compact(t) in c for t in _ALWAYS_EXCLUDE_CLUB):
+        return False
+    # アイアンは「セット同士」で比較したいので単品（バラ売り1本）を除外
+    if m.category == "iron":
+        if any(compact(t) in c for t in ["単品", "ばら売り", "1本", "単品アイアン"]):
+            return False
+    for x in m.excludes:
+        if any(compact(alt) in c for alt in x.split("|")):
+            return False
+    for r in m.required:
+        if not any(compact(alt) in c for alt in r.split("|")):
+            return False
+    return True
+
+
+def run_catalog_model(m: DriverModel, pages: int = 2) -> dict:
+    """カタログ機種（キーワード方式）を 中古=楽天 / フリマ=Yahoo で集計。"""
+    used: list[Listing] = []
+    for l in rakuten.search(m.keyword + " 中古", pages=pages):
+        if (l.is_used and not is_parts_junk(l.title)
+                and l.price >= MIN_USED_PRICE and _catalog_match(l.title, m)):
+            l.loft = extract_loft(l.title)
+            used.append(l)
+    sold: list[Listing] = []
+    for l in yahoo_auction.search_closed(m.keyword, pages=pages):
+        if (l.price >= MIN_FLEA_PRICE and not is_parts_junk(l.title)
+                and _catalog_match(l.title, m)):
+            sold.append(l)
+
+    u = _stats([x.price for x in used])
+    f = _stats([x.price for x in sold])
+    return {
+        "model_key": m.key,
+        "model_label": f"{m.brand} {m.label}",
+        "brand": m.brand,
+        "year": m.year,
+        "catalog": True,
+        "mode": "single",
+        "total_listings": len(used) + len(sold),
+        "used": u,
+        "flea_sold": f,
+        "gap": _gap(u["min"], f["avg"]),
+        "headline": {
+            "used_avg": u["avg"], "used_min": u["min"],
+            "flea_sold_avg": f["avg"], "gap": _gap(u["min"], f["avg"]),
+        },
+        "used_samples": _samples(used),
+        "flea_samples": _samples(sold),
+    }
+
+
+def run(model_key: str = DEFAULT_MODEL_KEY, pages: int = 2,
+        grade_filter: list[str] | None = None) -> dict:
+    if model_key in CATALOG_BY_KEY:
+        return run_catalog_model(CATALOG_BY_KEY[model_key], pages=pages)
+    if model_key in MODELS:
+        spec = MODELS[model_key]
+        listings = collect_listings(spec, pages=pages)
+        if grade_filter:
+            listings = [l for l in listings if l.grade_key in grade_filter]
+        result = summarize(listings)
+        result["model_key"] = spec.key
+        result["model_label"] = spec.label
+        return result
+
+    # ユーザー追加モデル
+    from . import registry
+    user = registry.load()
+    if model_key in user:
+        return _run_user_model(user[model_key], pages)
+    raise KeyError(f"unknown model: {model_key}")

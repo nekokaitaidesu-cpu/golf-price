@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ゴルフクラブ中古価格調査</title>
+<style>
+  :root { --bg:#0f1720; --card:#18222e; --line:#27323f; --txt:#e7edf3;
+          --muted:#8aa0b4; --accent:#36b37e; --accent2:#4c9aff; --warn:#f5a623; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+         background:var(--bg); color:var(--txt); -webkit-text-size-adjust:100%; }
+  header { padding:16px 18px; border-bottom:1px solid var(--line); position:sticky; top:0;
+           background:rgba(15,23,32,.95); backdrop-filter:blur(6px); z-index:5; }
+  h1 { font-size:17px; margin:0 0 2px; }
+  .sub { color:var(--muted); font-size:12px; }
+  .wrap { max-width:980px; margin:0 auto; padding:16px 14px 60px; }
+  .controls { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:14px; }
+  select, button { font-size:14px; padding:9px 12px; border-radius:9px; border:1px solid var(--line);
+                   background:var(--card); color:var(--txt); }
+  button { cursor:pointer; }
+  button.primary { background:var(--accent); border-color:var(--accent); color:#04221a; font-weight:700; }
+  button:disabled { opacity:.5; cursor:default; }
+  .meta { color:var(--muted); font-size:12px; margin-left:auto; }
+  .grades { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px; }
+  .gcard { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; }
+  .gcard.feature { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent) inset; }
+  .gcard h3 { margin:0 0 10px; font-size:14px; display:flex; align-items:center; gap:6px; }
+  .pill { font-size:10px; padding:2px 7px; border-radius:999px; background:#23303d; color:var(--muted); }
+  .pill.f { background:var(--accent); color:#04221a; }
+  .metrics { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+  .m { background:#101a24; border-radius:9px; padding:9px 8px; text-align:center; }
+  .m .label { font-size:10px; color:var(--muted); }
+  .m .val { font-size:17px; font-weight:700; margin-top:3px; }
+  .m .val.na { color:var(--muted); font-weight:400; font-size:12px; }
+  .m.avg .val { color:var(--accent); } .m.min .val { color:var(--accent2); }
+  .gfoot { margin-top:9px; font-size:11px; color:var(--muted); display:flex; justify-content:space-between; }
+  .gfoot a { color:var(--accent2); cursor:pointer; text-decoration:none; }
+  details { margin-top:8px; }
+  table { width:100%; border-collapse:collapse; font-size:12px; margin-top:6px; }
+  th,td { text-align:left; padding:6px 6px; border-bottom:1px solid var(--line); }
+  td.price { color:var(--accent); font-weight:700; white-space:nowrap; }
+  td a { color:var(--txt); text-decoration:none; }
+  .note { font-size:11px; color:var(--muted); margin-top:18px; line-height:1.7;
+          border-top:1px dashed var(--line); padding-top:12px; }
+  .loading { color:var(--warn); }
+  .err { color:#ff6b6b; }
+  .addbox { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:4px 0 16px;
+            background:var(--card); border:1px solid var(--line); border-radius:12px; padding:10px 12px; }
+  .addbox input { flex:1; min-width:240px; font-size:13px; padding:9px 11px; border-radius:9px;
+                  border:1px solid var(--line); background:#101a24; color:var(--txt); }
+  #addmsg { font-size:12px; color:var(--muted); }
+  #addmsg.ok { color:var(--accent); } #addmsg.ng { color:#ff6b6b; }
+  option.user { color:var(--accent); }
+  .loftbar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:14px;
+             background:var(--card); border:1px solid var(--line); border-radius:12px; padding:10px 12px; }
+  .loftbar .ttl { font-size:13px; color:var(--muted); margin-right:4px; }
+  .radio { display:inline-flex; align-items:center; gap:5px; font-size:13px; cursor:pointer;
+           padding:6px 11px; border:1px solid var(--line); border-radius:999px; background:#101a24; }
+  .radio:has(input:checked) { border-color:var(--accent); color:var(--accent); background:#10241c; }
+  .radio input { accent-color:var(--accent); }
+  .radio .cnt { font-size:11px; color:var(--muted); }
+  .gap { margin:12px 0 4px; padding:13px 14px; border-radius:11px; border:1px solid var(--line); background:#101a24; }
+  .gap.loss { border-color:#5a2730; background:#1e1417; }
+  .gap.profit { border-color:#22503c; background:#0f1f18; }
+  .gap .formula { font-size:12.5px; color:var(--muted); margin-bottom:7px; line-height:1.7; }
+  .gap .formula b { color:var(--txt); }
+  .gap .formula .op { color:#6b7d8f; margin:0 2px; }
+  .gap .flow { display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:13px; }
+  .gap .reslabel { color:var(--muted); }
+  .gap .amt { font-weight:800; }
+  .gap .amt.big { font-size:24px; }
+  .gap.loss .amt { color:#ff7a85; } .gap.profit .amt { color:var(--accent); }
+  .gap .note2 { font-size:12px; color:var(--muted); margin-top:6px; }
+  .gap.none { background:#101a24; } .gap.none .note2 { margin:0; }
+  .lists { margin-top:8px; } .emptylist { font-size:11px; color:var(--muted); padding:4px 0; }
+  td.price.sold { color:#ff9aa3; }
+  td.shop { color:var(--muted); white-space:nowrap; }
+  .ranktable { width:100%; border-collapse:collapse; font-size:13px; }
+  .ranktable th, .ranktable td { padding:9px 8px; border-bottom:1px solid var(--line); text-align:right; }
+  .ranktable th:nth-child(2), .ranktable td.model { text-align:left; }
+  .ranktable tbody tr { cursor:pointer; }
+  .ranktable tbody tr:hover { background:#18222e; }
+  .ranktable .rank { color:var(--muted); width:34px; }
+  .ranktable .brand { font-size:11px; color:var(--muted); }
+  .ranktable .profit { font-weight:800; }
+  .ranktable .profit.win { color:var(--accent); } .ranktable .profit.loss { color:#ff7a85; }
+  .ranktable .pending { color:var(--warn); }
+  .rankhead { font-size:13px; color:var(--muted); margin-bottom:8px; }
+  .rankhead .back { color:var(--accent2); cursor:pointer; margin-left:8px; }
+  .catpicks { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px; margin-top:6px; }
+  .catpick { display:flex; flex-direction:column; align-items:flex-start; gap:4px; padding:16px;
+             font-size:16px; font-weight:700; background:var(--card); border:1px solid var(--line);
+             border-radius:12px; color:var(--txt); cursor:pointer; text-align:left; }
+  .catpick:hover { border-color:var(--accent); }
+  .catpick.all { border-color:var(--accent2); }
+  .catpick .cnt { font-size:11px; font-weight:400; color:var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>⛳ ゴルフクラブ中古価格調査</h1>
+  <div class="sub">サイト横断でモデル名を名寄せし、グレード別に ①中古平均 ②最安値 ③フリマ実売平均 を集計</div>
+</header>
+<div class="wrap">
+  <div class="controls">
+    <select id="model"></select>
+    <select id="pages">
+      <option value="1">1ページ（速い）</option>
+      <option value="2" selected>2ページ</option>
+      <option value="3">3ページ（多め）</option>
+    </select>
+    <button class="primary" id="go">検索</button>
+    <button id="refresh" title="キャッシュを無視して再取得">↻ 最新</button>
+    <button id="rankbtn" title="人気機種の損益ランキング">📊 損益ランキング</button>
+    <span class="meta" id="meta"></span>
+  </div>
+
+  <div class="addbox">
+    <input id="gpurl" type="text" placeholder="ゴルフパートナーの model_code 付きURLを貼り付け（例: https://www.golfpartner.jp/...?model_code=460220）">
+    <button id="add">＋ モデル追加</button>
+    <span id="addmsg"></span>
+  </div>
+
+  <div id="status"></div>
+  <div class="grades" id="grades"></div>
+
+  <div class="note" id="note"></div>
+</div>
+
+<script>
+const yen = n => (n==null) ? "—" : "¥" + n.toLocaleString();
+const $ = s => document.querySelector(s);
+// グレードのうち注目（◆◆◆ MAX=本命、MAX標準、Triple Diamond）
+const FEATURE = new Set(["triple_diamond_max","max","triple_diamond"]);
+
+async function loadModels(selectKey){
+  const r = await fetch("/api/models"); const ms = await r.json();
+  $("#model").innerHTML = `<option value="" disabled ${selectKey?'':'selected'}>機種を選択してください…</option>`
+    + ms.map(m=>
+      `<option value="${m.key}" class="${m.user_added?'user':''}">${m.user_added?'★ ':''}${m.label}</option>`
+    ).join("");
+  if(selectKey) $("#model").value = selectKey;
+}
+
+async function addModel(){
+  const url = $("#gpurl").value.trim();
+  const msg = $("#addmsg");
+  if(!url){ msg.className="ng"; msg.textContent="URLを入力してください"; return; }
+  $("#add").disabled = true; msg.className=""; msg.textContent="追加中…（ページを取得しています）";
+  try{
+    const r = await fetch(`/api/models/add?url=${encodeURIComponent(url)}`, {method:"POST"});
+    const d = await r.json();
+    if(!d.ok){ msg.className="ng"; msg.textContent="失敗: "+d.error; return; }
+    msg.className="ok"; msg.textContent=`追加しました: ${d.model.label}（${d.model.sample_count}件）`;
+    $("#gpurl").value="";
+    await loadModels(d.model.key);
+    search(true);
+  }catch(e){ msg.className="ng"; msg.textContent="通信エラー: "+e; }
+  finally{ $("#add").disabled = false; }
+}
+
+function metric(label, val, cls){
+  const na = (val==null);
+  return `<div class="m ${cls}"><div class="label">${label}</div>
+    <div class="val ${na?'na':''}">${na?'データなし':yen(val)}</div></div>`;
+}
+
+// 試算バナー: 中古最安×0.9 − 送料 − フリマ実売平均（このアプリの主役）
+function gapBanner(b){
+  const g = b.gap;
+  if(!g){
+    return `<div class="gap none"><span class="note2">中古ショップ／フリマ実売データが不足のため試算できません（落札相場に該当が少ない）。</span></div>`;
+  }
+  const feePct = Math.round(g.fee_rate*100);
+  const profit = g.profit, win = profit >= 0;
+  return `<div class="gap ${win?'profit':'loss'}">
+    <div class="formula">
+      フリマ実売平均 <b>${yen(g.flea_avg)}</b> ×${(1-g.fee_rate).toFixed(2)}
+      <span class="op">−</span> 送料 ${yen(g.shipping)}
+      <span class="op">−</span> 中古最安 <b>${yen(g.used_min)}</b>
+    </div>
+    <div class="flow">
+      <span class="reslabel">試算（仕入れて売った損益）</span>
+      <span class="amt big">${win?'＋':'−'}${yen(Math.abs(profit))}</span>
+    </div>
+    <div class="note2">${win
+      ? `この条件なら <b>約${yen(Math.abs(profit))}</b> の利益が見込めます`
+      : `この条件だと <b>約${yen(Math.abs(profit))}</b> の赤字です`}
+      （手数料${feePct}%・送料${yen(g.shipping)}込み／中古${b.used.count}件・フリマ${b.flea_sold.count}件）</div>
+  </div>`;
+}
+
+function listTable(samples, title, sold){
+  if(!samples || !samples.length)
+    return `<div class="emptylist">${title}: 該当データなし</div>`;
+  const rows = samples.map(s=>`<tr>
+      <td class="price ${sold?'sold':''}">${yen(s.price)}</td>
+      <td><a href="${s.url}" target="_blank" rel="noopener">${s.title.replace(/</g,'&lt;')}</a></td>
+      <td class="shop">${s.shop||""}</td></tr>`).join("");
+  return `<details><summary>${title}（${samples.length}件）</summary>
+    <table><thead><tr><th>価格</th><th>商品名</th><th>${sold?'売れた場所/日':'店舗'}</th></tr></thead>
+    <tbody>${rows}</tbody></table></details>`;
+}
+
+function sampleSections(b){
+  return `<div class="lists">`
+    + listTable(b.used_samples, "🏬 中古ショップ出品（買うとき）", false)
+    + listTable(b.flea_samples, "🏷️ フリマ実売（売れた価格）", true)
+    + `</div>`;
+}
+
+// === ロフト別表示（ユーザー追加モデル） ===
+let LOFTS = [];
+const loftLabel = b => b.loft === "すべて" ? "すべて" : (b.loft === "不明" ? "ロフト不明" : b.loft + "°");
+
+function renderLoft(d){
+  LOFTS = d.lofts;
+  const radios = d.lofts.map((b,i)=>
+    `<label class="radio"><input type="radio" name="loft" value="${i}" ${i===0?'checked':''}>`
+    + `${loftLabel(b)}<span class="cnt">${b.used.count}</span></label>`).join("");
+  $("#grades").innerHTML =
+    `<div class="loftbar"><span class="ttl">ロフトで絞り込み:</span>${radios}</div><div id="loftview"></div>`;
+  document.querySelectorAll('input[name=loft]').forEach(r=> r.onchange=()=>showLoft(+r.value));
+  showLoft(0);
+}
+
+function showLoft(i){
+  const b = LOFTS[i], u = b.used, f = b.flea_sold;
+  $("#loftview").innerHTML = `<div class="gcard feature">
+    <h3>${loftLabel(b)} <span class="pill f">選択中</span> <span class="pill">${u.count}件</span></h3>
+    <div class="metrics">
+      ${metric("①中古 平均", u.avg, "avg")}
+      ${metric("②最安値", u.min, "min")}
+      ${metric("③フリマ実売", f.avg, "flea")}
+    </div>
+    ${gapBanner(b)}
+    <div class="gfoot">
+      <span>中央値 ${yen(u.median)} ／ 最高 ${yen(u.max)}</span>
+      <span>ヘッドのみ ${b.head_only_count}件</span>
+    </div>
+    ${sampleSections(b)}
+  </div>`;
+}
+
+// 単一機種（カタログ）カード
+function renderSingle(d){
+  const u = d.used, f = d.flea_sold;
+  $("#grades").innerHTML = `<div class="gcard feature">
+    <h3>${d.model_label} <span class="pill">${d.year||""}</span> <span class="pill">中古${u.count}・フリマ${f.count}件</span></h3>
+    <div class="metrics">
+      ${metric("①中古 平均", u.avg, "avg")}
+      ${metric("②最安値", u.min, "min")}
+      ${metric("③フリマ実売", f.avg, "flea")}
+    </div>
+    ${gapBanner(d)}
+    <div class="gfoot"><span>中古 中央値 ${yen(u.median)} ／ 最高 ${yen(u.max)}</span></div>
+    ${sampleSections(d)}
+  </div>`;
+}
+
+// === 損益ランキング：まずカテゴリ選択画面 ===
+let RANK_CANCEL = false;
+
+async function loadRanking(){
+  RANK_CANCEL = true;                 // 進行中のロードがあれば止める
+  $("#note").innerHTML = ""; $("#status").innerHTML = "";
+  $("#meta").textContent = "損益ランキング";
+  const [cats, ms] = await Promise.all([
+    fetch("/api/categories").then(r=>r.json()),
+    fetch("/api/models").then(r=>r.json()),
+  ]);
+  const total = ms.filter(m=>m.catalog).length;
+  const btns = cats.map(c=>
+    `<button class="catpick" data-cat="${c.key}">${c.label}<span class="cnt">${c.count}機種</span></button>`
+  ).join("");
+  $("#grades").innerHTML =
+    `<div class="rankhead">どのランキングを取得しますか？（機種が多いほど時間がかかります。順次表示されます）</div>
+     <div class="catpicks">
+       ${btns}
+       <button class="catpick all" data-cat="__all__">すべて<span class="cnt">${total}機種</span></button>
+     </div>`;
+  document.querySelectorAll(".catpick").forEach(b=>{
+    b.onclick = ()=> runRanking(b.dataset.cat);
+  });
+}
+
+async function runRanking(cat){
+  RANK_CANCEL = false;
+  const ms = await (await fetch("/api/models")).json();
+  const targets = ms.filter(m=>m.catalog && (cat==="__all__" || m.category===cat));
+  const catName = cat==="__all__" ? "すべて" : (await (await fetch("/api/categories")).json()).find(c=>c.key===cat)?.label || "";
+  $("#grades").innerHTML =
+    `<div class="rankhead">［${catName}］中古最安で仕入れ→フリマ実売平均で売却の試算損益（良い順）。行クリックで詳細。
+       <a class="back" id="rankback">← カテゴリ選択へ</a></div>
+     <table class="ranktable"><thead><tr>
+       <th class="rank">#</th><th>機種</th><th>中古最安</th><th>フリマ平均</th><th>試算損益</th>
+     </tr></thead><tbody id="rankbody"></tbody></table>`;
+  $("#rankback").onclick = loadRanking;
+  const rows = [];
+  let done = 0;
+  for(const m of targets){
+    if(RANK_CANCEL) return;           // 別カテゴリへ切替えられたら中断
+    try{
+      const d = await (await fetch(`/api/ranking/one?key=${m.key}`)).json();
+      rows.push(d);
+    }catch(e){ /* skip */ }
+    done++;
+    $("#status").innerHTML = `<span class="loading">［${catName}］集計中… ${done}/${targets.length}</span>`;
+    drawRanking(rows);
+  }
+  $("#status").innerHTML = `<span style="color:var(--accent)">［${catName}］完了：${rows.length}機種を集計しました。</span>`;
+}
+
+function drawRanking(rows){
+  const sorted = rows.slice().sort((a,b)=>
+    (a.profit==null?1:0)-(b.profit==null?1:0) || (b.profit??-1e9)-(a.profit??-1e9));
+  $("#rankbody").innerHTML = sorted.map((r,i)=>{
+    const has = r.profit!=null;
+    const cls = !has?"":(r.profit>=0?"win":"loss");
+    const ptxt = !has?`<span class="pending">データ不足</span>`
+      : `${r.profit>=0?'＋':'−'}${yen(Math.abs(r.profit))}`;
+    return `<tr data-key="${r.key}">
+      <td class="rank">${i+1}</td>
+      <td class="model">${r.label}<div class="brand">${r.brand}・${r.year}　中古${r.used_count}/フリマ${r.flea_count}件</div></td>
+      <td>${yen(r.used_min)}</td>
+      <td>${yen(r.flea_avg)}</td>
+      <td class="profit ${cls}">${ptxt}</td></tr>`;
+  }).join("");
+  document.querySelectorAll("#rankbody tr").forEach(tr=>{
+    tr.onclick = ()=>{ $("#model").value = tr.dataset.key; search(false); };
+  });
+}
+
+function gradeCard(g){
+  const u = g.used, f = g.flea_sold;
+  const feat = FEATURE.has(g.grade_key);
+  return `<div class="gcard ${feat?'feature':''}">
+    <h3>${g.grade_label} ${feat?'<span class="pill f">注目</span>':''}
+        <span class="pill">${u.count}件</span></h3>
+    <div class="metrics">
+      ${metric("①中古 平均", u.avg, "avg")}
+      ${metric("②最安値", u.min, "min")}
+      ${metric("③フリマ実売", f.avg, "flea")}
+    </div>
+    ${gapBanner(g)}
+    <div class="gfoot">
+      <span>中央値 ${yen(u.median)} ／ 最高 ${yen(u.max)}</span>
+      <span>ヘッドのみ ${g.head_only_count}件</span>
+    </div>
+    ${sampleSections(g)}
+  </div>`;
+}
+
+async function search(refresh=false){
+  const model = $("#model").value, pages = $("#pages").value;
+  if(!model){
+    $("#status").innerHTML = `<span class="loading">上の欄から機種を選択してください。</span>`;
+    return;
+  }
+  $("#go").disabled = $("#refresh").disabled = true;
+  $("#status").innerHTML = `<span class="loading">取得中… サイトへアクセスしています（数十秒かかる場合があります）</span>`;
+  $("#grades").innerHTML = ""; $("#note").innerHTML = "";
+  try{
+    const r = await fetch(`/api/search?model=${model}&pages=${pages}&refresh=${refresh}`);
+    const d = await r.json();
+    if(d.error){ $("#status").innerHTML = `<span class="err">エラー: ${d.error}</span>`; return; }
+    $("#status").innerHTML = "";
+    if(d.mode === "loft"){
+      renderLoft(d);
+    }else if(d.mode === "single"){
+      renderSingle(d);
+    }else{
+      // 注目グレードを先頭に
+      const grades = d.grades.slice().sort((a,b)=>(FEATURE.has(b.grade_key)?1:0)-(FEATURE.has(a.grade_key)?1:0));
+      $("#grades").innerHTML = grades.map(gradeCard).join("");
+    }
+    $("#meta").textContent = `${d.model_label}／全${d.total_listings}件`
+        + (d._cached ? "（キャッシュ）" : ` （取得 ${d._fetched_at||""}）`);
+    $("#note").innerHTML =
+      `※ ①②中古価格＝中古ショップ（ゴルフパートナー/楽天）の出品。③フリマ実売＝Yahoo!オークション落札相場＋Yahoo!フリマの「実際に売れた価格」。<br>`
+      + `※「差額」は中古ショップで買ってフリマで売った場合の目減り目安（ヘッドのみ等も含む概算）。価格は取得時点のもの。個人利用・低頻度アクセス前提で取得しています。`;
+  }catch(e){
+    $("#status").innerHTML = `<span class="err">通信エラー: ${e}</span>`;
+  }finally{
+    $("#go").disabled = $("#refresh").disabled = false;
+  }
+}
+
+$("#go").onclick = ()=>search(false);
+$("#refresh").onclick = ()=>search(true);
+$("#rankbtn").onclick = loadRanking;
+$("#add").onclick = addModel;
+$("#gpurl").addEventListener("keydown", e=>{ if(e.key==="Enter") addModel(); });
+// 機種を選んだ時点で読み込む（ページ表示時は何も読み込まない）
+$("#model").addEventListener("change", ()=>{ if($("#model").value) search(false); });
+loadModels().then(()=>{
+  $("#status").innerHTML = `<span class="loading">機種を選択すると相場を読み込みます。（上の欄、または下のURL貼り付けで機種を追加できます）</span>`;
+});
+</script>
+</body>
+</html>
