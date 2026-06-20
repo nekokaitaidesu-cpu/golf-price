@@ -89,6 +89,9 @@
   .ranktable td.usedmin a { color:var(--accent2); text-decoration:none; }
   .ranktable td.usedmin .src { font-size:10px; color:var(--muted); margin-top:2px; line-height:1.3; max-width:160px; }
   .ranktable td.usedmin .ho { font-size:10px; color:var(--warn); margin-left:5px; }
+  .ranktable th.sortable { cursor:pointer; user-select:none; white-space:nowrap; }
+  .ranktable th.sortable:hover { color:#fff; }
+  .ranktable th .ind { color:var(--accent); font-size:11px; }
   .rankhead { font-size:13px; color:var(--muted); margin-bottom:8px; }
   .rankhead .back { color:var(--accent2); cursor:pointer; margin-left:8px; }
   .catpicks { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px; margin-top:6px; }
@@ -294,12 +297,20 @@ async function runRanking(cat){
   const targets = ms.filter(m=>m.catalog && (cat==="__all__" || m.category===cat));
   const catName = cat==="__all__" ? "すべて" : (await (await fetch("/api/categories")).json()).find(c=>c.key===cat)?.label || "";
   $("#grades").innerHTML =
-    `<div class="rankhead">［${catName}］中古最安で仕入れ→フリマ実売平均で売却の試算損益（良い順）。行クリックで詳細。
+    `<div class="rankhead">［${catName}］中古最安で仕入れ→フリマ実売平均で売却の試算損益。<b>列見出しをクリックで並び替え</b>。行クリックで詳細。
        <a class="back" id="rankback">← カテゴリ選択へ</a></div>
      <table class="ranktable"><thead><tr>
-       <th class="rank">#</th><th>機種</th><th>中古最安</th><th>フリマ平均</th><th>試算損益</th>
+       <th class="rank">#</th><th>機種</th>
+       <th class="sortable" data-key="used_min">中古最安 <span class="ind"></span></th>
+       <th class="sortable" data-key="flea_avg">フリマ平均 <span class="ind"></span></th>
+       <th class="sortable" data-key="profit">試算損益 <span class="ind"></span></th>
      </tr></thead><tbody id="rankbody"></tbody></table>`;
   $("#rankback").onclick = loadRanking;
+  // 既定は試算損益の良い順。見出しクリックでソート切替
+  RANK_STATE = { rows: [], key: "profit", dir: "desc" };
+  document.querySelectorAll(".ranktable th.sortable").forEach(th=>{
+    th.onclick = ()=> sortRanking(th.dataset.key);
+  });
   const rows = [];
   let done = 0;
   for(const m of targets){
@@ -315,31 +326,61 @@ async function runRanking(cat){
   $("#status").innerHTML = `<span style="color:var(--accent)">［${catName}］完了：${rows.length}機種を集計しました。</span>`;
 }
 
-function drawRanking(rows){
-  const sorted = rows.slice().sort((a,b)=>
-    (a.profit==null?1:0)-(b.profit==null?1:0) || (b.profit??-1e9)-(a.profit??-1e9));
-  $("#rankbody").innerHTML = sorted.map((r,i)=>{
-    const has = r.profit!=null;
-    const cls = !has?"":(r.profit>=0?"win":"loss");
-    const ptxt = !has?`<span class="pending">データ不足</span>`
-      : `${r.profit>=0?'＋':'−'}${yen(Math.abs(r.profit))}`;
-    const shop = (r.used_min_shop||"").replace(/</g,"&lt;");
-    const minCell = r.used_min==null ? "—" :
-      `<a href="${r.used_min_url||'#'}" target="_blank" rel="noopener">${yen(r.used_min)}</a>`
-      + (r.used_min_head_only?`<span class="ho">ヘッドのみ</span>`:``)
-      + (shop?`<div class="src">${shop}</div>`:``);
-    return `<tr data-key="${r.key}">
-      <td class="rank">${i+1}</td>
-      <td class="model">${r.label}<div class="brand">${r.brand}・${r.year}　中古${r.used_count}/フリマ${r.flea_count}件</div></td>
-      <td class="usedmin">${minCell}</td>
-      <td>${yen(r.flea_avg)}</td>
-      <td class="profit ${cls}">${ptxt}</td></tr>`;
-  }).join("");
+// ランキングの状態（行データ＋現在のソート）
+let RANK_STATE = { rows: [], key: "profit", dir: "desc" };
+// 列ごとの既定の並び順（中古最安は安い順＝昇順）
+const RANK_DEFAULT_DIR = { used_min: "asc", flea_avg: "desc", profit: "desc" };
+
+function rankRowHTML(r, i){
+  const has = r.profit!=null;
+  const cls = !has?"":(r.profit>=0?"win":"loss");
+  const ptxt = !has?`<span class="pending">データ不足</span>`
+    : `${r.profit>=0?'＋':'−'}${yen(Math.abs(r.profit))}`;
+  const shop = (r.used_min_shop||"").replace(/</g,"&lt;");
+  const minCell = r.used_min==null ? "—" :
+    `<a href="${r.used_min_url||'#'}" target="_blank" rel="noopener">${yen(r.used_min)}</a>`
+    + (r.used_min_head_only?`<span class="ho">ヘッドのみ</span>`:``)
+    + (shop?`<div class="src">${shop}</div>`:``);
+  return `<tr data-key="${r.key}">
+    <td class="rank">${i+1}</td>
+    <td class="model">${r.label}<div class="brand">${r.brand}・${r.year}　中古${r.used_count}/フリマ${r.flea_count}件</div></td>
+    <td class="usedmin">${minCell}</td>
+    <td>${yen(r.flea_avg)}</td>
+    <td class="profit ${cls}">${ptxt}</td></tr>`;
+}
+
+function renderRankBody(){
+  const { rows, key, dir } = RANK_STATE;
+  const sorted = rows.slice().sort((a,b)=>{
+    const av=a[key], bv=b[key], an=(av==null), bn=(bv==null);
+    if(an||bn) return (an?1:0)-(bn?1:0);            // 値なしは常に末尾
+    return dir==="asc" ? av-bv : bv-av;
+  });
+  $("#rankbody").innerHTML = sorted.map(rankRowHTML).join("");
   document.querySelectorAll("#rankbody tr").forEach(tr=>{
     tr.onclick = ()=>{ $("#model").value = tr.dataset.key; search(false); };
-    // 出品リンクのクリックは行の詳細遷移を発火させない
     tr.querySelectorAll("a").forEach(a=> a.onclick = e=> e.stopPropagation());
   });
+  // ソート方向の矢印表示
+  document.querySelectorAll(".ranktable th.sortable").forEach(th=>{
+    const ind = th.querySelector(".ind");
+    if(ind) ind.textContent = (th.dataset.key===key) ? (dir==="asc"?"▲":"▼") : "";
+  });
+}
+
+function drawRanking(rows){
+  RANK_STATE.rows = rows;
+  renderRankBody();
+}
+
+function sortRanking(key){
+  if(RANK_STATE.key===key){
+    RANK_STATE.dir = (RANK_STATE.dir==="asc") ? "desc" : "asc";   // 同じ列なら方向トグル
+  }else{
+    RANK_STATE.key = key;
+    RANK_STATE.dir = RANK_DEFAULT_DIR[key] || "desc";
+  }
+  renderRankBody();
 }
 
 function gradeCard(g){
