@@ -148,22 +148,6 @@ CATALOG: list[DriverModel] = [
     DriverModel("ti_gt3", "タイトリスト", "GT3", "2024",
                 "タイトリスト GT3 ドライバー", ["タイトリスト|titleist", "gt3"], []),
 
-    # ============ ブリヂストン ============
-    DriverModel("bs_jgr", "ブリヂストン", "TOUR B JGR", "2021",
-                "ブリヂストン TOUR B JGR ドライバー", ["jgr"], []),
-    # 旧Jシリーズ（J715 B3/B5 等）や TOUR B XD と混同しないよう除外
-    DriverModel("bs_b1", "ブリヂストン", "B1", "2022",
-                "ブリヂストン B1 ドライバー", ["ブリヂストン|bridgestone", "b1"],
-                ["b1st", "j715", "j815", "xd", "tourb"]),
-    DriverModel("bs_b2", "ブリヂストン", "B2", "2022",
-                "ブリヂストン B2 ドライバー", ["ブリヂストン|bridgestone", "b2"],
-                ["b2ht", "j715", "j815", "xd", "tourb"]),
-    DriverModel("bs_b1st", "ブリヂストン", "B1ST", "2022",
-                "ブリヂストン B1ST ドライバー", ["b1st"], ["j715", "j815"]),
-    DriverModel("bs_b3", "ブリヂストン", "B3", "2024",
-                "ブリヂストン B3 ドライバー", ["ブリヂストン|bridgestone", "b3"],
-                ["j715", "j815", "xd", "tourb"]),
-
     # ============ ダンロップ スリクソン ZX ============
     DriverModel("sx_zx5", "スリクソン", "ZX5", "2021",
                 "スリクソン ZX5 ドライバー", ["zx5"], ["mk"]),
@@ -407,7 +391,7 @@ CATALOG: list[DriverModel] = [
                 "タイトリスト 917 ドライバー", ["タイトリスト|titleist", "=917"], []),
     DriverModel("ti_915", "タイトリスト", "915 D2/D3", "2015",
                 "タイトリスト 915 ドライバー", ["タイトリスト|titleist", "=915"], []),
-    # --- 名機ドライバー：ミズノ/コブラ/ブリヂストン/スリクソン ---
+    # --- 名機ドライバー：ミズノ/コブラ/スリクソン ---
     DriverModel("mz_st200", "ミズノ", "ST200", "2020",
                 "ミズノ ST200 ドライバー", ["st200"], ["st200g", "st200x"]),
     DriverModel("mz_st200x", "ミズノ", "ST200X", "2020",
@@ -418,10 +402,6 @@ CATALOG: list[DriverModel] = [
                 "コブラ KING F9 ドライバー", ["コブラ|cobra", "=f9"], []),
     DriverModel("cb_f8", "コブラ", "KING F8", "2018",
                 "コブラ KING F8 ドライバー", ["コブラ|cobra", "=f8"], []),
-    DriverModel("bs_xd3", "ブリヂストン", "TOUR B XD-3", "2018",
-                "ブリヂストン TOUR B XD-3 ドライバー", ["ブリヂストン|bridgestone", "xd3"], []),
-    DriverModel("bs_xd5", "ブリヂストン", "TOUR B XD-5", "2018",
-                "ブリヂストン TOUR B XD-5 ドライバー", ["ブリヂストン|bridgestone", "xd5"], []),
     DriverModel("sx_z565d", "スリクソン", "Z565", "2016",
                 "スリクソン Z565 ドライバー", ["z565"], []),
     DriverModel("sx_z585d", "スリクソン", "Z585", "2018",

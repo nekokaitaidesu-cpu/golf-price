@@ -22,7 +22,8 @@
   button.primary { background:var(--accent); border-color:var(--accent); color:#04221a; font-weight:700; }
   button:disabled { opacity:.5; cursor:default; }
   .meta { color:var(--muted); font-size:12px; margin-left:auto; }
-  .grades { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px; }
+  .grades { display:block; }
+  .cardgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px; }
   .gcard { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; }
   .gcard.feature { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent) inset; }
   .gcard h3 { margin:0 0 10px; font-size:14px; display:flex; align-items:center; gap:6px; }
@@ -458,7 +459,7 @@ async function search(refresh=false){
     }else{
       // 注目グレードを先頭に
       const grades = d.grades.slice().sort((a,b)=>(FEATURE.has(b.grade_key)?1:0)-(FEATURE.has(a.grade_key)?1:0));
-      $("#grades").innerHTML = grades.map(gradeCard).join("");
+      $("#grades").innerHTML = `<div class="cardgrid">` + grades.map(gradeCard).join("") + `</div>`;
     }
     $("#meta").textContent = `${d.model_label}／全${d.total_listings}件`
         + (d._cached ? "（キャッシュ）" : ` （取得 ${d._fetched_at||""}）`);
