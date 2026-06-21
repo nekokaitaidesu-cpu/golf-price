@@ -14,6 +14,9 @@ history.csv
 # ユーザーが追加した機種（実行時データ）
 user_models.json
 
+# 生成物のスマホ用サイト（別リポジトリで公開する）
+site/
+
 # 認証情報など（誤コミット防止）
 service_account.json
 *.key

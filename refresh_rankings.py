@@ -72,6 +72,15 @@ def main():
     except Exception as e:
         log(f"履歴保存に失敗: {type(e).__name__}: {e}")
 
+    # スマホ用静的サイトを生成してGitHub Pagesへ自動アップ
+    try:
+        import build_site
+        n = build_site.build()
+        log(f"スマホ用サイトを生成: {n}機種 → site/")
+        log("公開: " + build_site.publish())
+    except Exception as e:
+        log(f"サイト生成/公開に失敗: {type(e).__name__}: {e}")
+
     mins = (time.time() - start) / 60
     log(f"=== 完了 成功{ok} / 失敗{ng} / 所要 {mins:.1f}分 ===")
     _logfile.close()
