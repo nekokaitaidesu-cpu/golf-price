@@ -158,6 +158,18 @@ def api_history(key: str):
     return {"key": key, "rows": [dict(zip(COLUMNS, r)) for r in rows]}
 
 
+@app.post("/api/publish-site")
+def api_publish_site():
+    """現在のキャッシュからスマホ用サイトを再生成し、GitHub Pagesへ公開。"""
+    import build_site
+    try:
+        n = build_site.build()
+        msg = build_site.publish()
+        return {"ok": True, "models": n, "publish": msg}
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
+
+
 @app.get("/")
 def index():
     return FileResponse(STATIC_DIR / "index.html")

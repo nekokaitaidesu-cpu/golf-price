@@ -98,6 +98,9 @@
   #rankrefresh { font-size:13px; padding:9px 14px; border-radius:9px; border:1px solid var(--accent);
                  background:var(--accent); color:#04221a; font-weight:700; cursor:pointer; }
   #rankrefresh:disabled { opacity:.5; cursor:default; }
+  #rankpublish { font-size:13px; padding:9px 14px; border-radius:9px; border:1px solid var(--line);
+                 background:var(--card); color:var(--txt); cursor:pointer; }
+  #rankpublish:hover { border-color:var(--accent2); }
   .rankrefnote { font-size:11px; color:var(--muted); }
   .catpicks { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px; margin-top:6px; }
   .catpick { display:flex; flex-direction:column; align-items:flex-start; gap:4px; padding:16px;
@@ -307,7 +310,8 @@ async function runRanking(cat, refresh=false){
        <a class="back" id="rankback">← カテゴリ選択へ</a></div>
      <div class="rankbar">
        <button id="rankrefresh">↻ ランキングを今すぐ最新取得（${targets.length}機種・約${estMin}分）</button>
-       <span class="rankrefnote">※ 全機種を取り直します。普段は毎日3:00に自動更新</span>
+       <button id="rankpublish">📲 スマホサイトに反映</button>
+       <span class="rankrefnote">※ 最新取得はスマホサイトにも自動反映。「📲」は今のデータをスマホへ即反映</span>
      </div>
      <table class="ranktable"><thead><tr>
        <th class="rank">#</th><th>機種</th>
@@ -317,6 +321,7 @@ async function runRanking(cat, refresh=false){
      </tr></thead><tbody id="rankbody"></tbody></table>`;
   $("#rankback").onclick = loadRanking;
   $("#rankrefresh").onclick = (e)=>{ e.target.disabled = true; runRanking(cat, true); };
+  $("#rankpublish").onclick = ()=> publishSite();
   // 既定は試算損益の良い順。見出しクリックでソート切替
   RANK_STATE = { rows: [], key: "profit", dir: "desc" };
   document.querySelectorAll(".ranktable th.sortable").forEach(th=>{
@@ -336,6 +341,22 @@ async function runRanking(cat, refresh=false){
     drawRanking(rows);
   }
   $("#status").innerHTML = `<span style="color:var(--accent)">［${catName}］${tag}完了：${rows.length}機種${refresh?"を最新化しました":"を集計しました"}。</span>`;
+  if(refresh) await publishSite(true);   // 最新取得後はスマホサイトへ自動反映
+}
+
+// 現在のデータでスマホ用サイトを再生成して公開
+async function publishSite(append=false){
+  const base = append ? $("#status").innerHTML : "";
+  $("#status").innerHTML = base + ` <span class="loading">スマホサイトへ反映中…</span>`;
+  try{
+    const r = await fetch("/api/publish-site", {method:"POST"});
+    const d = await r.json();
+    const msg = d.ok ? `📲 スマホサイトに反映しました（${d.models}機種・${d.publish}）`
+                     : `スマホ反映に失敗: ${d.error}`;
+    $("#status").innerHTML = base + ` <span style="color:${d.ok?'var(--accent)':'#ff6b6b'}">${msg}</span>`;
+  }catch(e){
+    $("#status").innerHTML = base + ` <span style="color:#ff6b6b">スマホ反映エラー: ${e}</span>`;
+  }
 }
 
 // ランキングの状態（行データ＋現在のソート）
