@@ -67,6 +67,8 @@
   .gap .formula { font-size:12.5px; color:var(--muted); margin-bottom:7px; line-height:1.7; }
   .gap .formula b { color:var(--txt); }
   .gap .formula .op { color:#6b7d8f; margin:0 2px; }
+  .gap .formula .medtag { display:inline-block; margin-left:6px; font-size:10px; color:var(--accent2);
+                          border:1px solid var(--line); border-radius:6px; padding:1px 5px; }
   .gap .flow { display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:13px; }
   .gap .reslabel { color:var(--muted); }
   .gap .amt { font-weight:800; }
@@ -193,11 +195,15 @@ function gapBanner(b){
   }
   const feePct = Math.round(g.fee_rate*100);
   const profit = g.profit, win = profit >= 0;
+  const med = g.basis === "median";
+  const fLabel = med ? "フリマ中央値" : "フリマ実売平均";
+  const uLabel = med ? "中古中央値" : "中古最安";
   return `<div class="gap ${win?'profit':'loss'}">
     <div class="formula">
-      フリマ実売平均 <b>${yen(g.flea_avg)}</b> ×${(1-g.fee_rate).toFixed(2)}
+      ${fLabel} <b>${yen(g.flea_base)}</b> ×${(1-g.fee_rate).toFixed(2)}
       <span class="op">−</span> 送料 ${yen(g.shipping)}
-      <span class="op">−</span> 中古最安 <b>${yen(g.used_min)}</b>
+      <span class="op">−</span> ${uLabel} <b>${yen(g.used_base)}</b>
+      ${med?'<span class="medtag">アイアンは中央値で試算</span>':''}
     </div>
     <div class="flow">
       <span class="reslabel">試算（仕入れて売った損益）</span>

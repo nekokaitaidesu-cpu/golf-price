@@ -21,18 +21,20 @@ FEE_RATE = 0.10      # フリマ手数料10%（中古最安に対して ×0.9）
 SHIPPING = 1700      # 送料（円）
 
 
-def _gap(used_min, flea_avg) -> dict | None:
-    """試算: フリマ実売平均×(1−手数料) − 送料 − 中古最安値。
+def _gap(used_base, flea_base, basis="min_avg") -> dict | None:
+    """試算: フリマ売値×(1−手数料) − 送料 − 中古仕入れ。
 
-    手数料はフリマ売値にかかる。値が正なら利益、負なら損。
+    basis="min_avg": 中古最安×フリマ平均（ドライバー等の既定）
+    basis="median" : 中古中央値×フリマ中央値（アイアン用。単品/世代差にブレない）
     """
-    if used_min is None or flea_avg is None:
+    if used_base is None or flea_base is None:
         return None
-    profit = round(flea_avg * (1 - FEE_RATE) - SHIPPING - used_min)
+    profit = round(flea_base * (1 - FEE_RATE) - SHIPPING - used_base)
     return {
         "profit": profit,
-        "used_min": used_min,
-        "flea_avg": flea_avg,
+        "used_base": used_base,
+        "flea_base": flea_base,
+        "basis": basis,
         "fee_rate": FEE_RATE,
         "shipping": SHIPPING,
     }
@@ -322,6 +324,11 @@ def run_catalog_model(m: DriverModel, pages: int = 2) -> dict:
 
     u = _stats([x.price for x in used])
     f = _stats([x.price for x in sold])
+    # アイアンは単品/世代差にブレない「中央値ベース」、それ以外は「最安×平均」
+    if m.category == "iron":
+        gap = _gap(u["median"], f["median"], basis="median")
+    else:
+        gap = _gap(u["min"], f["avg"], basis="min_avg")
     return {
         "model_key": m.key,
         "model_label": f"{m.brand} {m.label}",
@@ -332,10 +339,10 @@ def run_catalog_model(m: DriverModel, pages: int = 2) -> dict:
         "total_listings": len(used) + len(sold),
         "used": u,
         "flea_sold": f,
-        "gap": _gap(u["min"], f["avg"]),
+        "gap": gap,
         "headline": {
             "used_avg": u["avg"], "used_min": u["min"],
-            "flea_sold_avg": f["avg"], "gap": _gap(u["min"], f["avg"]),
+            "flea_sold_avg": f["avg"], "gap": gap,
         },
         "used_samples": _samples(used),
         "flea_samples": _samples(sold),

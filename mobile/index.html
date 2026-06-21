@@ -160,9 +160,14 @@ function viewModel(key){
   setHead(m.label, `${m.brand}・${m.year}`, true);
   const u=m.used, f=m.flea, p=m.profit;
   const win = (p!=null && p>=0);
+  const med = m.gap_basis === "median";
+  const fLabel = med ? "フリマ中央値" : "フリマ実売平均";
+  const uLabel = med ? "中古中央値" : "中古最安";
+  const gUsed = (m.gap_used!=null) ? m.gap_used : u.min;
+  const gFlea = (m.gap_flea!=null) ? m.gap_flea : f.avg;
   const gap = (p==null) ? `<div class="gap"><div class="f">フリマ実売データ不足のため試算できません。</div></div>` :
     `<div class="gap ${win?'win':'loss'}">
-       <div class="f">フリマ実売平均 ${yen(f.avg)} ×${(1-DATA.fee_rate).toFixed(2)} − 送料${yen(DATA.shipping)} − 中古最安 ${yen(u.min)}</div>
+       <div class="f">${fLabel} ${yen(gFlea)} ×${(1-DATA.fee_rate).toFixed(2)} − 送料${yen(DATA.shipping)} − ${uLabel} ${yen(gUsed)}${med?'（アイアンは中央値で試算）':''}</div>
        <div class="big">${win?'＋':'−'}${yen(Math.abs(p))}</div>
        <div class="f">${win?'この条件なら利益が見込めます':'この条件だと赤字です'}（中古${u.count}・フリマ${f.count}件）</div>
      </div>`;
