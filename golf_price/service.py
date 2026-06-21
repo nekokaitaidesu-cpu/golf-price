@@ -5,7 +5,8 @@ import statistics
 from collections import defaultdict
 
 from .spec import MODELS, DEFAULT_MODEL_KEY, ModelSpec
-from .normalize import analyze, normalize, detect_head_only, is_parts_junk, compact, extract_loft
+from .normalize import (analyze, normalize, detect_head_only, is_parts_junk,
+                        compact, extract_loft, looks_like_iron_set)
 from .scrapers import rakuten, golfpartner, yahoo_auction
 from .scrapers.base import Listing
 from . import flea
@@ -276,10 +277,10 @@ def _catalog_match(title: str, m: DriverModel) -> bool:
                 return False
         if any(compact(t) in c for t in _ALWAYS_EXCLUDE_CLUB):
             return False
-    # アイアンは「セット同士」で比較したいので単品（バラ売り1本）を除外
-    if m.category == "iron":
-        if any(compact(t) in c for t in ["単品", "ばら売り", "1本", "単品アイアン"]):
-            return False
+    # アイアンは「セット同士」で比較したいので単品（バラ売り1本）を除外し、
+    # セットらしい出品のみ採用する（最安が単品で歪むのを防ぐ）
+    if m.category == "iron" and not looks_like_iron_set(title):
+        return False
     for x in m.excludes:
         if any(_term_hit(alt, c, n) for alt in x.split("|")):
             return False

@@ -109,6 +109,26 @@ def is_blocked_shop(shop: str = "", url: str = "") -> bool:
     return any(b in s for b in BLOCKED_SHOPS)
 
 
+# 単品（バラ売り1本）を示す語
+_SINGLE_TOKENS = ["単品", "ばら売り", "ばらうり", "1本", "１本", "単体", "バラ", "ばら"]
+# 本数/レンジ系のセット判定（番手レンジ例: 5-pw, 5～pw, 6-9, 5i-pw, 5番-pw）
+_SET_RANGE = re.compile(r"[4-9]\s*[i番]?\s*[-~ー－〜]\s*#?\s*(p|pw|aw|sw|gw|w|[4-9]|1[01])")
+
+
+def looks_like_iron_set(title: str) -> bool:
+    """アイアンが『セット』らしいか（単品を除外し、セット同士で比較するため）。"""
+    n = normalize(title)
+    if any(t in n for t in _SINGLE_TOKENS):
+        return False
+    if "セット" in n or "番手" in n:
+        return True
+    if re.search(r"[4-9]\s*本|1[0-2]\s*本", n):   # 4〜12本
+        return True
+    if _SET_RANGE.search(n):
+        return True
+    return False
+
+
 _LOFT_PAT = re.compile(r"(\d{1,2}(?:\.\d)?)\s*[°度]")
 
 
