@@ -11,7 +11,9 @@ from fastapi import FastAPI, Query
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from golf_price import service, cache, registry
+import time
+
+from golf_price import service, cache, registry, history
 from golf_price.spec import MODELS, DEFAULT_MODEL_KEY
 from golf_price.catalog import CATALOG, CATALOG_BY_KEY, CATEGORIES
 
@@ -80,13 +82,19 @@ def api_ranking_one(key: str, refresh: bool = False):
     m = CATALOG_BY_KEY[key]
     g = d.get("gap") or {}
     cheapest = (d.get("used_samples") or [{}])[0]   # 最安の出品（価格昇順の先頭）
+    # 前日（前回取得日）の最安値との比較（％）
+    cur_min = d["used"]["min"]
+    cur_date = (d.get("_fetched_at") or "")[:10] or time.strftime("%Y-%m-%d")
+    prev_min = history.last_min_before(key, cur_date)
+    prev_pct = round((cur_min - prev_min) / prev_min * 100) if (prev_min and cur_min) else None
     return {
         "key": key, "label": f"{m.brand} {m.label}", "brand": m.brand, "year": m.year,
         "category": m.category,
-        "used_min": d["used"]["min"], "used_avg": d["used"]["avg"], "used_count": d["used"]["count"],
+        "used_min": cur_min, "used_avg": d["used"]["avg"], "used_count": d["used"]["count"],
         "used_min_shop": cheapest.get("shop", ""),
         "used_min_url": cheapest.get("url", ""),
         "used_min_head_only": cheapest.get("head_only", False),
+        "prev_min": prev_min, "prev_pct": prev_pct,
         "flea_avg": d["flea_sold"]["avg"], "flea_count": d["flea_sold"]["count"],
         "profit": g.get("profit"),
     }

@@ -78,7 +78,7 @@ MAX / MAX D / MAX FAST / **◆◆◆ MAX（Triple Diamond MAX）** /
 （ブランド・検索KW・required/excludes 圧縮キー）。
 
 ## 毎日の自動取得＆履歴蓄積
-- Windowsタスクスケジューラ「**GolfPriceRefresh**」が**毎日3:00**に `refresh_rankings.py` を実行し、
+- Windowsタスクスケジューラ「**GolfPriceRefresh**」が**毎日2:00**に `refresh_rankings.py` を実行し、
   全機種の価格を取得して30分かけてキャッシュを更新（`StartWhenAvailable`で取りこぼし時は次回起動時に実行）。
 - キャッシュ保持は約26時間。日中はランキング・詳細が**待ち時間ゼロ**で表示される。
 - 取得結果は **`history.db`（SQLite）＋ `history.csv`** に1日1行/機種で**蓄積**（時系列）。

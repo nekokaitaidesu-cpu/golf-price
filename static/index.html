@@ -93,6 +93,10 @@
   .ranktable th.sortable { cursor:pointer; user-select:none; white-space:nowrap; }
   .ranktable th.sortable:hover { color:#fff; }
   .ranktable th .ind { color:var(--accent); font-size:11px; }
+  .ranktable td.prev .prevpct { font-weight:700; }
+  .ranktable td.prev .prevpct.down { color:var(--accent); }   /* 安くなった=緑 */
+  .ranktable td.prev .prevpct.up { color:#ff7a85; }            /* 同額以上=赤 */
+  .ranktable td.prev .muted { color:var(--muted); }
   .rankhead { font-size:13px; color:var(--muted); margin-bottom:8px; }
   .rankhead .back { color:var(--accent2); cursor:pointer; margin-left:8px; }
   .rankbar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:4px 0 12px; }
@@ -312,11 +316,12 @@ async function runRanking(cat, refresh=false){
      <div class="rankbar">
        <button id="rankrefresh">↻ ランキングを今すぐ最新取得（${targets.length}機種・約${estMin}分）</button>
        <button id="rankpublish">📲 スマホサイトに反映</button>
-       <span class="rankrefnote">※ 最新取得はスマホサイトにも自動反映。「📲」は今のデータをスマホへ即反映</span>
+       <span class="rankrefnote">※ 最新取得はスマホサイトにも自動反映。「📲」は今のデータをスマホへ即反映。前日比は毎日2:00取得の履歴と比較</span>
      </div>
      <table class="ranktable"><thead><tr>
        <th class="rank">#</th><th>機種</th>
        <th class="sortable" data-key="used_min">中古最安 <span class="ind"></span></th>
+       <th class="sortable" data-key="prev_pct">前日比 <span class="ind"></span></th>
        <th class="sortable" data-key="flea_avg">フリマ平均 <span class="ind"></span></th>
        <th class="sortable" data-key="profit">試算損益 <span class="ind"></span></th>
      </tr></thead><tbody id="rankbody"></tbody></table>`;
@@ -363,7 +368,7 @@ async function publishSite(append=false){
 // ランキングの状態（行データ＋現在のソート）
 let RANK_STATE = { rows: [], key: "profit", dir: "desc" };
 // 列ごとの既定の並び順（中古最安は安い順＝昇順）
-const RANK_DEFAULT_DIR = { used_min: "asc", flea_avg: "desc", profit: "desc" };
+const RANK_DEFAULT_DIR = { used_min: "asc", prev_pct: "asc", flea_avg: "desc", profit: "desc" };
 
 function rankRowHTML(r, i){
   const has = r.profit!=null;
@@ -375,10 +380,14 @@ function rankRowHTML(r, i){
     `<a href="${r.used_min_url||'#'}" target="_blank" rel="noopener">${yen(r.used_min)}</a>`
     + (r.used_min_head_only?`<span class="ho">ヘッドのみ</span>`:``)
     + (shop?`<div class="src">${shop}</div>`:``);
+  const pc = r.prev_pct;
+  const prevCell = (pc==null) ? `<span class="muted">—</span>`
+    : `<span class="prevpct ${pc<0?'down':'up'}">${pc<0?'':'＋'}${pc}%</span>`;
   return `<tr data-key="${r.key}">
     <td class="rank">${i+1}</td>
     <td class="model">${r.label}<div class="brand">${r.brand}・${r.year}　中古${r.used_count}/フリマ${r.flea_count}件</div></td>
     <td class="usedmin">${minCell}</td>
+    <td class="prev">${prevCell}</td>
     <td>${yen(r.flea_avg)}</td>
     <td class="profit ${cls}">${ptxt}</td></tr>`;
 }

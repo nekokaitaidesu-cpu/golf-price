@@ -85,3 +85,18 @@ def count() -> int:
     n = con.execute("SELECT COUNT(*) FROM price_history").fetchone()[0]
     con.close()
     return n
+
+
+def last_min_before(key: str, date_str: str):
+    """指定日より前の、最も新しい中古最安値（前日比の基準）。無ければ None。"""
+    if not DB_PATH.exists():
+        return None
+    con = _conn()
+    row = con.execute(
+        "SELECT used_min FROM price_history "
+        "WHERE key=? AND date<? AND used_min IS NOT NULL "
+        "ORDER BY date DESC LIMIT 1",
+        (key, date_str),
+    ).fetchone()
+    con.close()
+    return row[0] if row and row[0] else None
