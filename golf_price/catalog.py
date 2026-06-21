@@ -257,6 +257,10 @@ CATALOG: list[DriverModel] = [
     DriverModel("pxg_blackops", "PXG", "0311 BLACK OPS", "2024",
                 "PXG 0311 ブラックオプス ドライバー", ["blackops|ブラックオプス"], []),
 
+    # ============ 地クラブ・その他 ※指定より ============
+    DriverModel("fuso_dream_ks2", "フソードリーム", "FUSO DREAM KS2", "—",
+                "フソー ドリーム KS2 ドライバー", ["ks2", "ドリーム|dream|フソー|fuso"], []),
+
     # ==================== フェアウェイウッド ====================
     DriverModel("fw_tm_sim2max", "テーラーメイド", "SIM2 MAX", "2021",
                 "テーラーメイド SIM2 MAX フェアウェイウッド", ["sim2max"], ["maxd"], category="fw"),
