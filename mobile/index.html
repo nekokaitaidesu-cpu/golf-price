@@ -39,6 +39,10 @@
   .row .profit { font-size:17px; font-weight:800; }
   .row .profit.win { color:var(--accent); } .row .profit.loss { color:var(--loss); }
   .row .mn { font-size:11px; color:var(--muted); margin-top:2px; }
+  .row .pp { font-weight:700; }
+  .row .pp.down { color:var(--accent); }   /* 安くなった=緑 */
+  .row .pp.up { color:var(--loss); }        /* 同額以上=赤 */
+  .sortbar button { font-size:12px; padding:9px 6px; }
   .chev { color:var(--muted); flex:none; font-size:18px; }
 
   .metrics { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin:6px 0 12px; }
@@ -123,23 +127,28 @@ function viewList(cat){
   const items = DATA.models.filter(m=>m.category===cat);
   const sorted = items.slice().sort((a,b)=>{
     if(SORT==="min"){ const av=a.used.min, bv=b.used.min; if(av==null||bv==null) return (av==null)-(bv==null); return av-bv; }
+    if(SORT==="prev"){ const av=a.prev_pct, bv=b.prev_pct; if(av==null||bv==null) return (av==null)-(bv==null); return av-bv; }
     const av=a.profit, bv=b.profit; if(av==null||bv==null) return (av==null)-(bv==null); return bv-av;
   });
   const rows = sorted.map((m,i)=>{
     const has = m.profit!=null, cls = !has?"":(m.profit>=0?"win":"loss");
     const ptxt = !has?`<span style="color:var(--muted);font-size:12px">データ不足</span>`
       : `<span class="profit ${cls}">${m.profit>=0?'＋':'−'}${yen(Math.abs(m.profit))}</span>`;
+    const pc = m.prev_pct;
+    const pp = (pc==null) ? "" :
+      ` ・前日<span class="pp ${pc<0?'down':'up'}">${pc<0?'':'＋'}${pc}%</span>`;
     return `<div class="row" onclick="go('m=${m.key}')">
       <div class="rk">${i+1}</div>
       <div class="mid"><div class="nm">${m.label}</div>
         <div class="meta">${m.brand}・${m.year}　中古${m.used.count}/フリマ${m.flea.count}件</div></div>
-      <div class="pr">${ptxt}<div class="mn">最安${yen(m.used.min)}</div></div>
+      <div class="pr">${ptxt}<div class="mn">最安${yen(m.used.min)}${pp}</div></div>
       <div class="chev">›</div></div>`;
   }).join("");
   $("#app").innerHTML =
     `<div class="sortbar">
-       <button id="s_profit" class="${SORT==='profit'?'on':''}" onclick="setSort('profit')">試算損益が良い順</button>
-       <button id="s_min" class="${SORT==='min'?'on':''}" onclick="setSort('min')">中古最安が安い順</button>
+       <button id="s_profit" class="${SORT==='profit'?'on':''}" onclick="setSort('profit')">損益が良い順</button>
+       <button id="s_min" class="${SORT==='min'?'on':''}" onclick="setSort('min')">最安が安い順</button>
+       <button id="s_prev" class="${SORT==='prev'?'on':''}" onclick="setSort('prev')">前日比 安い順</button>
      </div>` + (rows || `<div class="empty">データがありません。</div>`);
 }
 function setSort(s){ SORT=s; viewList(param().c); }

@@ -11,7 +11,7 @@ import json
 import time
 from pathlib import Path
 
-from golf_price import cache, service
+from golf_price import cache, service, history
 from golf_price.catalog import CATALOG, CATEGORIES
 
 BASE = Path(__file__).resolve().parent
@@ -25,12 +25,18 @@ def _model_entry(m, d: dict) -> dict:
     flea = d.get("flea_sold") or {}
     gap = d.get("gap") or {}
     cheapest = (d.get("used_samples") or [{}])[0]
+    # 前日（前回取得日）の最安値との比較（％）
+    cur_min = used.get("min")
+    cur_date = (d.get("_fetched_at") or "")[:10] or time.strftime("%Y-%m-%d")
+    prev_min = history.last_min_before(m.key, cur_date)
+    prev_pct = round((cur_min - prev_min) / prev_min * 100) if (prev_min and cur_min) else None
     return {
         "key": m.key, "label": f"{m.brand} {m.label}", "brand": m.brand,
         "year": m.year, "category": m.category,
         "used": {k: used.get(k) for k in ("count", "min", "avg", "median", "max")},
         "flea": {k: flea.get(k) for k in ("count", "avg", "median")},
         "profit": gap.get("profit"),
+        "prev_pct": prev_pct,
         "used_min_shop": cheapest.get("shop", ""),
         "used_min_url": cheapest.get("url", ""),
         "used_min_head_only": cheapest.get("head_only", False),
