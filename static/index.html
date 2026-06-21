@@ -94,6 +94,11 @@
   .ranktable th .ind { color:var(--accent); font-size:11px; }
   .rankhead { font-size:13px; color:var(--muted); margin-bottom:8px; }
   .rankhead .back { color:var(--accent2); cursor:pointer; margin-left:8px; }
+  .rankbar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:4px 0 12px; }
+  #rankrefresh { font-size:13px; padding:9px 14px; border-radius:9px; border:1px solid var(--accent);
+                 background:var(--accent); color:#04221a; font-weight:700; cursor:pointer; }
+  #rankrefresh:disabled { opacity:.5; cursor:default; }
+  .rankrefnote { font-size:11px; color:var(--muted); }
   .catpicks { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px; margin-top:6px; }
   .catpick { display:flex; flex-direction:column; align-items:flex-start; gap:4px; padding:16px;
              font-size:16px; font-weight:700; background:var(--card); border:1px solid var(--line);
@@ -291,14 +296,19 @@ async function loadRanking(){
   });
 }
 
-async function runRanking(cat){
+async function runRanking(cat, refresh=false){
   RANK_CANCEL = false;
   const ms = await (await fetch("/api/models")).json();
   const targets = ms.filter(m=>m.catalog && (cat==="__all__" || m.category===cat));
   const catName = cat==="__all__" ? "すべて" : (await (await fetch("/api/categories")).json()).find(c=>c.key===cat)?.label || "";
+  const estMin = Math.max(1, Math.ceil(targets.length * 30 / 60));   // 1機種30秒換算
   $("#grades").innerHTML =
-    `<div class="rankhead">［${catName}］中古最安で仕入れ→フリマ実売平均で売却の試算損益。<b>列見出しをクリックで並び替え</b>。行クリックで詳細。
+    `<div class="rankhead">［${catName}］中古最安で仕入れ→フリマ実売平均で売却の試算損益。<b>列見出しをクリックで並び替え</b>。行クリックで別タブに詳細。
        <a class="back" id="rankback">← カテゴリ選択へ</a></div>
+     <div class="rankbar">
+       <button id="rankrefresh">↻ ランキングを今すぐ最新取得（${targets.length}機種・約${estMin}分）</button>
+       <span class="rankrefnote">※ 全機種を取り直します。普段は毎日3:00に自動更新</span>
+     </div>
      <table class="ranktable"><thead><tr>
        <th class="rank">#</th><th>機種</th>
        <th class="sortable" data-key="used_min">中古最安 <span class="ind"></span></th>
@@ -306,24 +316,26 @@ async function runRanking(cat){
        <th class="sortable" data-key="profit">試算損益 <span class="ind"></span></th>
      </tr></thead><tbody id="rankbody"></tbody></table>`;
   $("#rankback").onclick = loadRanking;
+  $("#rankrefresh").onclick = (e)=>{ e.target.disabled = true; runRanking(cat, true); };
   // 既定は試算損益の良い順。見出しクリックでソート切替
   RANK_STATE = { rows: [], key: "profit", dir: "desc" };
   document.querySelectorAll(".ranktable th.sortable").forEach(th=>{
     th.onclick = ()=> sortRanking(th.dataset.key);
   });
+  const tag = refresh ? "最新取得" : "集計";
   const rows = [];
   let done = 0;
   for(const m of targets){
     if(RANK_CANCEL) return;           // 別カテゴリへ切替えられたら中断
     try{
-      const d = await (await fetch(`/api/ranking/one?key=${m.key}`)).json();
+      const d = await (await fetch(`/api/ranking/one?key=${m.key}&refresh=${refresh}`)).json();
       rows.push(d);
     }catch(e){ /* skip */ }
     done++;
-    $("#status").innerHTML = `<span class="loading">［${catName}］集計中… ${done}/${targets.length}</span>`;
+    $("#status").innerHTML = `<span class="loading">［${catName}］${tag}中… ${done}/${targets.length}</span>`;
     drawRanking(rows);
   }
-  $("#status").innerHTML = `<span style="color:var(--accent)">［${catName}］完了：${rows.length}機種を集計しました。</span>`;
+  $("#status").innerHTML = `<span style="color:var(--accent)">［${catName}］${tag}完了：${rows.length}機種${refresh?"を最新化しました":"を集計しました"}。</span>`;
 }
 
 // ランキングの状態（行データ＋現在のソート）
@@ -358,7 +370,8 @@ function renderRankBody(){
   });
   $("#rankbody").innerHTML = sorted.map(rankRowHTML).join("");
   document.querySelectorAll("#rankbody tr").forEach(tr=>{
-    tr.onclick = ()=>{ $("#model").value = tr.dataset.key; search(false); };
+    // 詳細は別タブで開く（ランキング画面を残す）
+    tr.onclick = ()=> window.open("/?model=" + encodeURIComponent(tr.dataset.key), "_blank");
     tr.querySelectorAll("a").forEach(a=> a.onclick = e=> e.stopPropagation());
   });
   // ソート方向の矢印表示
@@ -446,6 +459,12 @@ $("#gpurl").addEventListener("keydown", e=>{ if(e.key==="Enter") addModel(); });
 // 機種を選んだ時点で読み込む（ページ表示時は何も読み込まない）
 $("#model").addEventListener("change", ()=>{ if($("#model").value) search(false); });
 loadModels().then(()=>{
+  // ?model=キー で開かれた場合はその機種の詳細を直接表示（別タブからの遷移）
+  const pm = new URLSearchParams(location.search).get("model");
+  if(pm){
+    $("#model").value = pm;
+    if($("#model").value === pm){ search(false); return; }
+  }
   $("#status").innerHTML = `<span class="loading">機種を選択すると相場を読み込みます。（上の欄、または下のURL貼り付けで機種を追加できます）</span>`;
 });
 </script>

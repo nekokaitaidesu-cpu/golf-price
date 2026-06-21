@@ -67,14 +67,15 @@ def api_ranking():
 
 
 @app.get("/api/ranking/one")
-def api_ranking_one(key: str):
-    """ランキング1機種ぶんを計算（フロントの逐次ロード用）。"""
+def api_ranking_one(key: str, refresh: bool = False):
+    """ランキング1機種ぶんを計算（フロントの逐次ロード用）。refresh=trueでキャッシュ無視。"""
     if key not in CATALOG_BY_KEY:
         return JSONResponse({"error": "unknown"}, status_code=400)
     ck = f"{key}_p2"
-    d = cache.get(ck)
+    d = None if refresh else cache.get(ck)
     if not d:
         d = service.run(model_key=key, pages=2)
+        d["_fetched_at"] = __import__("time").strftime("%Y-%m-%d %H:%M")
         cache.put(ck, d)
     m = CATALOG_BY_KEY[key]
     g = d.get("gap") or {}
