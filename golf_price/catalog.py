@@ -304,7 +304,7 @@ CATALOG: list[DriverModel] = [
     DriverModel("ir_tm_p790", "テーラーメイド", "P790", "2023",
                 "テーラーメイド P790 アイアン", ["p790"], [], category="iron"),
     DriverModel("ir_tm_stealth", "テーラーメイド", "STEALTH アイアン", "2022",
-                "テーラーメイド ステルス アイアン", ["stealth"], ["stealth2"], category="iron"),
+                "テーラーメイド ステルス アイアン", ["stealth"], ["stealth2", "hd"], category="iron"),
     DriverModel("ir_tm_qi", "テーラーメイド", "Qi アイアン", "2024",
                 "テーラーメイド Qi10 アイアン", ["qi"], [], category="iron"),
     DriverModel("ir_cw_apex", "キャロウェイ", "APEX", "2021",
@@ -530,6 +530,44 @@ CATALOG: list[DriverModel] = [
                 "コブラ AEROJET アイアン", ["aerojet"], [], category="iron"),
     DriverModel("ir_cb_darkspeed", "コブラ", "DARKSPEED アイアン", "2024",
                 "コブラ DARKSPEED アイアン", ["darkspeed"], [], category="iron"),
+
+    # ============ 飛び系アイアン（7番≒27°以下の強ロフト・高反発系） ============
+    # 海外メジャーの飛び系
+    DriverModel("ir_ping_g710", "ピン", "G710", "2020",
+                "ピン G710 アイアン", ["g710"], [], category="iron"),
+    DriverModel("ir_ping_g730", "ピン", "G730", "2024",
+                "ピン G730 アイアン", ["g730"], [], category="iron"),
+    DriverModel("ir_ti_t400", "タイトリスト", "T400", "2021",
+                "タイトリスト T400 アイアン", ["t400"], [], category="iron"),
+    DriverModel("ir_tm_stealthhd", "テーラーメイド", "STEALTH HD アイアン", "2022",
+                "テーラーメイド ステルス HD アイアン", ["stealthhd"], [], category="iron"),
+    # 国産の飛び系（王道）
+    DriverModel("ir_ym_ud2", "ヤマハ", "inpres UD+2 アイアン", "2021",
+                "ヤマハ インプレス UD+2 アイアン", ["ud+2"], [], category="iron"),
+    DriverModel("ir_xx_xxio12", "ゼクシオ", "ゼクシオ12 アイアン", "2021",
+                "ゼクシオ12 アイアン", ["xxio12|ゼクシオ12"], [], category="iron"),
+    DriverModel("ir_xx_xxio13", "ゼクシオ", "ゼクシオ13 アイアン", "2023",
+                "ゼクシオ13 アイアン", ["xxio13|ゼクシオ13"], [], category="iron"),
+    DriverModel("ir_xx_xxiox", "ゼクシオ", "ゼクシオ エックス アイアン", "2022",
+                "ゼクシオ エックス アイアン", ["xxiox|ゼクシオエックス|ゼクシオクロス|ゼクシオx"], [], category="iron"),
+    DriverModel("ir_pr_egg", "プロギア", "egg アイアン", "—",
+                "プロギア egg アイアン", ["プロギア|prgr", "egg"], [], category="iron"),
+    DriverModel("ir_hm_d1", "本間", "D1 アイアン", "—",
+                "本間 D1 アイアン", ["本間|ホンマ|honma", "=d1"], [], category="iron"),
+    DriverModel("ir_onoff_aka", "オノフ", "AKA（赤）アイアン", "—",
+                "オノフ AKA 赤 アイアン", ["オノフ|onoff", "aka|赤"], [], category="iron"),
+    # 地クラブ・超高反発の飛び系
+    DriverModel("ir_works_hisho", "ワークスゴルフ", "マキシマックス飛匠", "—",
+                "ワークスゴルフ マキシマックス 飛匠 アイアン", ["飛匠|マキシマックス"], [], category="iron"),
+    DriverModel("ir_works_hyperblade", "ワークスゴルフ", "ハイパーブレード", "—",
+                "ワークスゴルフ ハイパーブレード アイアン", ["ハイパーブレード|hyperblade"], [], category="iron"),
+    DriverModel("ir_katana_voltio", "カタナ", "ボルティオ", "—",
+                "カタナ ボルティオ アイアン", ["ボルティオ|voltio"], [], category="iron"),
+    DriverModel("ir_dynamics", "ダイナミクス", "Dynamics 高反発", "—",
+                "ダイナミクス 高反発 アイアン", ["ダイナミクス|dynamics"], [], category="iron"),
+    # ナイキ（指定・旧モデル）
+    DriverModel("ir_nike_slingshot", "ナイキ", "Slingshot OSS", "—",
+                "ナイキ スリングショット OSS アイアン", ["slingshot|スリングショット"], [], category="iron"),
 
     # ==================== チッパー ====================
     DriverModel("ch_ping_chipr", "ピン", "CHIPR", "2022",
