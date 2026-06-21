@@ -1,5 +1,6 @@
 """検索→名寄せ→グレード分類→統計集計のオーケストレーション。"""
 
+import re
 import statistics
 from collections import defaultdict
 
@@ -239,40 +240,51 @@ CLUB_TOKENS = {
     "fw": ["フェアウェイ", "フェアウエイ", "fairway"],
     "ut": ["ユーティリティ", "utility", "ハイブリッド", "hybrid", "レスキュー", "rescue"],
     "iron": ["アイアン", "iron"],
+    "chipper": ["チッパー", "chipper"],
 }
 # どのカテゴリでも除外したい別クラブ種別
 _ALWAYS_EXCLUDE_CLUB = ["ウェッジ", "wedge", "パター", "putter"]
 
 
-def _catalog_match(title: str, m: DriverModel) -> bool:
-    """圧縮キー照合。required/excludes の各要素は '|' で代替（OR）を書ける。
+def _term_hit(term: str, c: str, n: str) -> bool:
+    """1つのキー判定。'=' 始まりは単語境界マッチ（M5/F9等の短い型番用）、
+    それ以外は圧縮文字列の部分一致。"""
+    if term.startswith("="):
+        t = term[1:].lower()
+        return re.search(r"(?<![0-9a-z])" + re.escape(t) + r"(?![0-9a-z])", n) is not None
+    return compact(term) in c
 
-    例: required=["ブリヂストン|bridgestone", "b2"] は
-        「(ブリヂストン or bridgestone) かつ b2」を要求。
+
+def _catalog_match(title: str, m: DriverModel) -> bool:
+    """キー照合。required/excludes の各要素は '|' で代替(OR)を書ける。
+    要素を '=' で始めると単語境界マッチ（例 '=m5' は SIM2 や TM50 に誤マッチしない）。
     カテゴリ（driver/fw/ut/iron）の種別語を要求し、他カテゴリ語は除外する。
     """
     c = compact(title)
+    n = normalize(title)
     # 当該カテゴリの種別語が必須
     club = [compact(t) for t in CLUB_TOKENS.get(m.category, CLUB_TOKENS["driver"])]
     if not any(t in c for t in club):
         return False
-    # 他カテゴリの種別語が入っていたら別クラブ品として除外
-    for cat, toks in CLUB_TOKENS.items():
-        if cat == m.category:
-            continue
-        if any(compact(t) in c for t in toks):
+    # チッパーは「アイアン型/パター型チッパー」等の表記があるためクロス除外しない
+    if m.category != "chipper":
+        # 他カテゴリの種別語が入っていたら別クラブ品として除外
+        for cat, toks in CLUB_TOKENS.items():
+            if cat == m.category:
+                continue
+            if any(compact(t) in c for t in toks):
+                return False
+        if any(compact(t) in c for t in _ALWAYS_EXCLUDE_CLUB):
             return False
-    if any(compact(t) in c for t in _ALWAYS_EXCLUDE_CLUB):
-        return False
     # アイアンは「セット同士」で比較したいので単品（バラ売り1本）を除外
     if m.category == "iron":
         if any(compact(t) in c for t in ["単品", "ばら売り", "1本", "単品アイアン"]):
             return False
     for x in m.excludes:
-        if any(compact(alt) in c for alt in x.split("|")):
+        if any(_term_hit(alt, c, n) for alt in x.split("|")):
             return False
     for r in m.required:
-        if not any(compact(alt) in c for alt in r.split("|")):
+        if not any(_term_hit(alt, c, n) for alt in r.split("|")):
             return False
     return True
 
@@ -288,15 +300,18 @@ def _drop_low_outliers(items: list[Listing], frac: float = 0.35) -> list[Listing
 
 def run_catalog_model(m: DriverModel, pages: int = 2) -> dict:
     """カタログ機種（キーワード方式）を 中古=楽天 / フリマ=Yahoo で集計。"""
+    # チッパーは安価なので下限を下げる
+    min_u = 2500 if m.category == "chipper" else MIN_USED_PRICE
+    min_f = 1500 if m.category == "chipper" else MIN_FLEA_PRICE
     used: list[Listing] = []
     for l in rakuten.search(m.keyword + " 中古", pages=pages):
         if (l.is_used and not is_parts_junk(l.title)
-                and l.price >= MIN_USED_PRICE and _catalog_match(l.title, m)):
+                and l.price >= min_u and _catalog_match(l.title, m)):
             l.loft = extract_loft(l.title)
             used.append(l)
     sold: list[Listing] = []
     for l in yahoo_auction.search_closed(m.keyword, pages=pages):
-        if (l.price >= MIN_FLEA_PRICE and not is_parts_junk(l.title)
+        if (l.price >= min_f and not is_parts_junk(l.title)
                 and _catalog_match(l.title, m)):
             sold.append(l)
 
