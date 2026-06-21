@@ -98,6 +98,17 @@ def is_parts_junk(title: str) -> bool:
     return any(tok in n for tok in (normalize(t).strip() for t in _JUNK_TOKENS))
 
 
+# 相場を歪めるため除外する店（楽天の輸入単品ショップ等）。店名 or 商品URLに含む語で判定。
+BLOCKED_SHOPS = [
+    "ajimura",   # AJIMURA-SHOP（海外輸入・単品アイアンが高値で相場を歪める）
+]
+
+
+def is_blocked_shop(shop: str = "", url: str = "") -> bool:
+    s = ((shop or "") + " " + (url or "")).lower()
+    return any(b in s for b in BLOCKED_SHOPS)
+
+
 _LOFT_PAT = re.compile(r"(\d{1,2}(?:\.\d)?)\s*[°度]")
 
 

@@ -10,7 +10,7 @@ import urllib.parse
 from bs4 import BeautifulSoup
 
 from .base import Listing, make_session, polite_sleep
-from ..normalize import extract_loft
+from ..normalize import extract_loft, is_blocked_shop
 
 CLOSED = "https://auctions.yahoo.co.jp/closedsearch/closedsearch?p={kw}&n={per}&b={begin}"
 
@@ -37,6 +37,10 @@ def _to_listing(raw: dict) -> Listing | None:
         return None
     aid = raw.get("auctionId", "")
     url = f"https://auctions.yahoo.co.jp/jp/auction/{aid}" if aid else ""
+    _s = raw.get("seller")
+    _seller_name = (_s.get("displayName") or _s.get("id") or "") if isinstance(_s, dict) else ""
+    if is_blocked_shop(_seller_name, url):
+        return None
     is_flea = bool(raw.get("isFleamarketItem"))
     end = (raw.get("endTime") or "")[:10]
     seller = ""

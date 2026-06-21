@@ -9,6 +9,7 @@ import urllib.parse
 from bs4 import BeautifulSoup
 
 from .base import Listing, make_session, polite_sleep
+from ..normalize import is_blocked_shop
 
 BASE = "https://search.rakuten.co.jp/search/mall/{kw}/"
 # ページ送りは ?p=2 ... 楽天は &p=N
@@ -34,6 +35,8 @@ def _parse(html: str) -> list[Listing]:
         url = a.get("href", "")
         shop_a = it.select_one(".merchant a, .content.merchant a")
         shop = shop_a.get_text(strip=True) if shop_a else ""
+        if is_blocked_shop(shop, url):       # 相場を歪める店を除外
+            continue
         img = it.select_one("img")
         image = (img.get("src") if img else "") or ""
         out.append(Listing(
