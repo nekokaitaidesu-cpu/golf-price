@@ -324,7 +324,8 @@ CATALOG: list[DriverModel] = [
     DriverModel("ir_tm_qi", "テーラーメイド", "Qi アイアン", "2024",
                 "テーラーメイド Qi10 アイアン", ["qi"], [], category="iron"),
     DriverModel("ir_cw_apex", "キャロウェイ", "APEX", "2021",
-                "キャロウェイ APEX アイアン", ["キャロウェイ|callaway", "apex"], ["pro", "tcb", "mb"], category="iron"),
+                "キャロウェイ APEX アイアン", ["キャロウェイ|callaway", "apex"],
+                ["apexpro", "apextcb", "apexmb", "apexdcb", "apexcb"], category="iron"),
     DriverModel("ir_cw_paradym", "キャロウェイ", "PARADYM アイアン", "2023",
                 "キャロウェイ パラダイム アイアン", ["paradym"], ["smoke"], category="iron"),
     DriverModel("ir_cw_aismoke", "キャロウェイ", "Ai SMOKE アイアン", "2024",
@@ -336,7 +337,7 @@ CATALOG: list[DriverModel] = [
     DriverModel("ir_ping_g430", "ピン", "G430 アイアン", "2023",
                 "ピン G430 アイアン", ["g430"], [], category="iron"),
     DriverModel("ir_ti_t100", "タイトリスト", "T100", "2023",
-                "タイトリスト T100 アイアン", ["t100"], [], category="iron"),
+                "タイトリスト T100 アイアン", ["t100"], ["t100s"], category="iron"),
     DriverModel("ir_ti_t200", "タイトリスト", "T200", "2023",
                 "タイトリスト T200 アイアン", ["t200"], [], category="iron"),
     DriverModel("ir_sx_zx5", "スリクソン", "ZX5 アイアン", "2021",
@@ -482,7 +483,7 @@ CATALOG: list[DriverModel] = [
                 "テーラーメイド M2 アイアン", ["テーラーメイド|taylormade", "=m2"], [], category="iron"),
     # --- 名機アイアン：キャロウェイ ---
     DriverModel("ir_cw_apexpro", "キャロウェイ", "APEX PRO", "2019",
-                "キャロウェイ APEX PRO アイアン", ["apex", "pro"], ["smoke"], category="iron"),
+                "キャロウェイ APEX PRO アイアン", ["apexpro"], [], category="iron"),
     DriverModel("ir_cw_rogue", "キャロウェイ", "ROGUE アイアン", "2018",
                 "キャロウェイ ROGUE アイアン", ["rogue"], ["roguest", "smoke"], category="iron"),
     DriverModel("ir_cw_xforged", "キャロウェイ", "X FORGED", "2018",
@@ -500,6 +501,55 @@ CATALOG: list[DriverModel] = [
                 "ミズノ MP-18 アイアン", ["ミズノ|mizuno", "mp18"], [], category="iron"),
     DriverModel("ir_mz_pro22", "ミズノ", "Pro 221/223/225", "2021",
                 "ミズノ Pro 223 アイアン", ["ミズノ|mizuno", "pro22"], [], category="iron"),
+
+    # ============ 2021〜2024 アイアン 追加（主要メーカー兄弟機・残り） ============
+    # テーラーメイド
+    DriverModel("ir_tm_sim2max", "テーラーメイド", "SIM2 MAX アイアン", "2021",
+                "テーラーメイド SIM2 MAX アイアン", ["sim2max"], [], category="iron"),
+    DriverModel("ir_tm_p7mb", "テーラーメイド", "P7MB", "2023",
+                "テーラーメイド P7MB アイアン", ["p7mb"], [], category="iron"),
+    # キャロウェイ
+    DriverModel("ir_cw_roguestmax", "キャロウェイ", "ROGUE ST MAX アイアン", "2022",
+                "キャロウェイ ROGUE ST MAX アイアン", ["roguestmax"], ["os"], category="iron"),
+    DriverModel("ir_cw_roguestmaxos", "キャロウェイ", "ROGUE ST MAX OS アイアン", "2022",
+                "キャロウェイ ROGUE ST MAX OS アイアン", ["roguestmax", "os"], [], category="iron"),
+    DriverModel("ir_cw_apexdcb", "キャロウェイ", "APEX DCB", "2021",
+                "キャロウェイ APEX DCB アイアン", ["apexdcb"], [], category="iron"),
+    DriverModel("ir_cw_apextcb", "キャロウェイ", "APEX TCB", "2021",
+                "キャロウェイ APEX TCB アイアン", ["apextcb"], [], category="iron"),
+    DriverModel("ir_cw_bigbertha", "キャロウェイ", "BIG BERTHA アイアン", "2023",
+                "キャロウェイ ビッグバーサ アイアン", ["bigbertha|ビッグバーサ"], [], category="iron"),
+    # ピン
+    DriverModel("ir_ping_g425", "ピン", "G425 アイアン", "2021",
+                "ピン G425 アイアン", ["g425"], [], category="iron"),
+    DriverModel("ir_ping_g440", "ピン", "G440 アイアン", "2024",
+                "ピン G440 アイアン", ["g440"], [], category="iron"),
+    # タイトリスト
+    DriverModel("ir_ti_t300", "タイトリスト", "T300", "2023",
+                "タイトリスト T300 アイアン", ["t300"], [], category="iron"),
+    DriverModel("ir_ti_t350", "タイトリスト", "T350", "2023",
+                "タイトリスト T350 アイアン", ["t350"], [], category="iron"),
+    DriverModel("ir_ti_t100s", "タイトリスト", "T100S", "2021",
+                "タイトリスト T100S アイアン", ["t100s"], [], category="iron"),
+    # ミズノ
+    DriverModel("ir_mz_jpx921", "ミズノ", "JPX921", "2021",
+                "ミズノ JPX921 アイアン", ["jpx921"], [], category="iron"),
+    # スリクソン
+    DriverModel("ir_sx_zx4", "スリクソン", "ZX4", "2021",
+                "スリクソン ZX4 アイアン", ["zx4"], ["mk"], category="iron"),
+    DriverModel("ir_sx_zx7mk2", "スリクソン", "ZX7 MkII", "2023",
+                "スリクソン ZX7 MkII アイアン", ["zx7mk"], [], category="iron"),
+    DriverModel("ir_sx_zx4mk2", "スリクソン", "ZX4 MkII", "2023",
+                "スリクソン ZX4 MkII アイアン", ["zx4mk"], [], category="iron"),
+    # コブラ
+    DriverModel("ir_cb_radspeed", "コブラ", "RADSPEED アイアン", "2021",
+                "コブラ RADSPEED アイアン", ["radspeed"], [], category="iron"),
+    DriverModel("ir_cb_ltdx", "コブラ", "KING LTDx アイアン", "2022",
+                "コブラ KING LTDx アイアン", ["ltdx"], [], category="iron"),
+    DriverModel("ir_cb_aerojet", "コブラ", "AEROJET アイアン", "2023",
+                "コブラ AEROJET アイアン", ["aerojet"], [], category="iron"),
+    DriverModel("ir_cb_darkspeed", "コブラ", "DARKSPEED アイアン", "2024",
+                "コブラ DARKSPEED アイアン", ["darkspeed"], [], category="iron"),
 
     # ==================== チッパー ====================
     DriverModel("ch_ping_chipr", "ピン", "CHIPR", "2022",
