@@ -29,3 +29,4 @@ service_account.json
 # OS
 Thumbs.db
 .DS_Store
+gen_models.py
