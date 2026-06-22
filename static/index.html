@@ -325,7 +325,8 @@ async function runRanking(cat, refresh=false){
        <span class="rankrefnote">※ 最新取得はスマホサイトにも自動反映。「📲」は今のデータをスマホへ即反映。前日比は毎日2:00取得の履歴と比較</span>
      </div>
      <table class="ranktable"><thead><tr>
-       <th class="rank">#</th><th>機種</th>
+       <th class="rank">#</th>
+       <th class="sortable" data-key="brand">機種 <span class="ind"></span></th>
        <th class="sortable" data-key="used_min">中古最安 <span class="ind"></span></th>
        <th class="sortable" data-key="prev_pct">前日比 <span class="ind"></span></th>
        <th class="sortable" data-key="flea_avg">フリマ平均 <span class="ind"></span></th>
@@ -374,7 +375,7 @@ async function publishSite(append=false){
 // ランキングの状態（行データ＋現在のソート）
 let RANK_STATE = { rows: [], key: "profit", dir: "desc" };
 // 列ごとの既定の並び順（中古最安は安い順＝昇順）
-const RANK_DEFAULT_DIR = { used_min: "asc", prev_pct: "asc", flea_avg: "desc", profit: "desc" };
+const RANK_DEFAULT_DIR = { brand: "asc", used_min: "asc", prev_pct: "asc", flea_avg: "desc", profit: "desc" };
 
 function rankRowHTML(r, i){
   const has = r.profit!=null;
@@ -401,6 +402,11 @@ function rankRowHTML(r, i){
 function renderRankBody(){
   const { rows, key, dir } = RANK_STATE;
   const sorted = rows.slice().sort((a,b)=>{
+    if(key==="brand"){                              // メーカー順（同メーカー内は機種名順）
+      const c = String(a.brand||"").localeCompare(String(b.brand||""), "ja")
+              || String(a.label||"").localeCompare(String(b.label||""), "ja");
+      return dir==="asc" ? c : -c;
+    }
     const av=a[key], bv=b[key], an=(av==null), bn=(bv==null);
     if(an||bn) return (an?1:0)-(bn?1:0);            // 値なしは常に末尾
     return dir==="asc" ? av-bv : bv-av;

@@ -7,12 +7,17 @@
 手動実行: python refresh_rankings.py
 """
 
+import sys
 import time
 from pathlib import Path
 
 from golf_price import service, cache, registry, history
 from golf_price.catalog import CATALOG, CATALOG_BY_KEY
 from golf_price.spec import MODELS
+
+# 前日比の基準は2:00の自動取得のみにしたいので、履歴記録は --record-history 指定時だけ。
+# （スケジュールタスクはこのフラグ付きで実行。手動実行は履歴を書かない）
+RECORD_HISTORY = "--record-history" in sys.argv
 
 # その日の履歴行をためる
 _history_rows = []
@@ -64,13 +69,16 @@ def main():
         ng += line.startswith("NG")
         log(f"[{i:>3}/{len(targets)}] {line}")
 
-    # その日の履歴を保存（(date,key)で上書き）→ history.db / history.csv
-    try:
-        today = time.strftime("%Y-%m-%d")
-        history.record(today, _history_rows)
-        log(f"履歴を保存: {len(_history_rows)}行 / 累計 {history.count()}行 → history.csv")
-    except Exception as e:
-        log(f"履歴保存に失敗: {type(e).__name__}: {e}")
+    # 履歴(前日比の基準)は2:00の自動取得のみ記録。手動実行はスキップ。
+    if RECORD_HISTORY:
+        try:
+            today = time.strftime("%Y-%m-%d")
+            history.record(today, _history_rows)
+            log(f"履歴を保存: {len(_history_rows)}行 / 累計 {history.count()}行 → history.csv")
+        except Exception as e:
+            log(f"履歴保存に失敗: {type(e).__name__}: {e}")
+    else:
+        log("手動実行のため履歴は記録しません（前日比の基準は2:00取得のまま）")
 
     # スマホ用静的サイトを生成してGitHub Pagesへ自動アップ
     try:
