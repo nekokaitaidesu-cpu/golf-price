@@ -87,7 +87,7 @@ def search_by_model_code(code: str, path: str | None = None, pages: int = 1,
     results: list[Listing] = []
     for page in range(1, min(pages, max_pages) + 1):
         url = _build_url(code, path, page)
-        polite_sleep(1.2)
+        polite_sleep(1.0, "golfpartner")
         r = sess.get(url, timeout=25)
         if r.status_code != 200:
             break
@@ -108,6 +108,6 @@ def search(keyword: str, pages: int = 1) -> list[Listing]:
     sess = make_session()
     kw = urllib.parse.quote(keyword)
     url = f"https://www.golfpartner.jp/shop/usedgoods/h010001_m9/?search=x&keyword={kw}"
-    polite_sleep()
+    polite_sleep(1.0, "golfpartner")
     r = sess.get(url, timeout=25)
     return _parse(r.text) if r.status_code == 200 else []

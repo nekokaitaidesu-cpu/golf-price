@@ -17,6 +17,11 @@ user_models.json
 # 生成物のスマホ用サイト（別リポジトリで公開する）
 site/
 
+# 調査用の一時ファイル
+probe_*.py
+_*.txt
+_*.html
+
 # 認証情報など（誤コミット防止）
 service_account.json
 *.key

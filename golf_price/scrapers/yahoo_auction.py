@@ -71,7 +71,7 @@ def search_closed(keyword: str, pages: int = 2, per: int = 100) -> list[Listing]
     for page in range(pages):
         begin = page * per + 1
         url = CLOSED.format(kw=kw, per=per, begin=begin)
-        polite_sleep(1.2)
+        polite_sleep(1.0, "yahoo")
         r = sess.get(url, timeout=25)
         if r.status_code != 200:
             break

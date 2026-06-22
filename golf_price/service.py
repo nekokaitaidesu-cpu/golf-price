@@ -3,6 +3,7 @@
 import re
 import statistics
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 
 from .spec import MODELS, DEFAULT_MODEL_KEY, ModelSpec
 from .normalize import (analyze, normalize, detect_head_only, is_parts_junk,
@@ -306,17 +307,27 @@ def run_catalog_model(m: DriverModel, pages: int = 2) -> dict:
     # チッパーは安価なので下限を下げる
     min_u = 2500 if m.category == "chipper" else MIN_USED_PRICE
     min_f = 1500 if m.category == "chipper" else MIN_FLEA_PRICE
-    used: list[Listing] = []
-    for l in rakuten.search(m.keyword + " 中古", pages=pages):
-        if (l.is_used and not is_parts_junk(l.title)
-                and l.price >= min_u and _catalog_match(l.title, m)):
-            l.loft = extract_loft(l.title)
-            used.append(l)
-    sold: list[Listing] = []
-    for l in yahoo_auction.search_closed(m.keyword, pages=pages):
-        if (l.price >= min_f and not is_parts_junk(l.title)
-                and _catalog_match(l.title, m)):
-            sold.append(l)
+    # 高速化: 各サイト1ページ＋楽天(中古)とYahoo(フリマ)を並列取得（別サイトなので安全）
+    def _fetch_used():
+        out = []
+        for l in rakuten.search(m.keyword + " 中古", pages=1):
+            if (l.is_used and not is_parts_junk(l.title)
+                    and l.price >= min_u and _catalog_match(l.title, m)):
+                l.loft = extract_loft(l.title)
+                out.append(l)
+        return out
+
+    def _fetch_sold():
+        out = []
+        for l in yahoo_auction.search_closed(m.keyword, pages=1, per=50):
+            if (l.price >= min_f and not is_parts_junk(l.title)
+                    and _catalog_match(l.title, m)):
+                out.append(l)
+        return out
+
+    with ThreadPoolExecutor(max_workers=2) as ex:
+        fu, fs = ex.submit(_fetch_used), ex.submit(_fetch_sold)
+        used, sold = fu.result(), fs.result()
 
     # 極端な安値（別モデル誤マッチ・部品）を除外してから集計
     used = _drop_low_outliers(used)

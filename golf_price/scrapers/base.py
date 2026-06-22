@@ -35,12 +35,13 @@ def make_session() -> requests.Session:
     return s
 
 
-# 簡易レート制御（連続アクセスを避ける）
-_last_call = {"t": 0.0}
+# 簡易レート制御（サイト別に独立管理。順次処理だと実質ほぼ待たない）
+_last_call: dict[str, float] = {}
 
 
-def polite_sleep(min_interval: float = 2.0):
-    elapsed = time.time() - _last_call["t"]
+def polite_sleep(min_interval: float = 1.0, key: str = "default"):
+    now = time.time()
+    elapsed = now - _last_call.get(key, 0.0)
     if elapsed < min_interval:
         time.sleep(min_interval - elapsed)
-    _last_call["t"] = time.time()
+    _last_call[key] = time.time()

@@ -59,7 +59,7 @@ def search(keyword: str, pages: int = 2) -> list[Listing]:
     results: list[Listing] = []
     for page in range(1, pages + 1):
         url = BASE.format(kw=kw) if page == 1 else PAGED.format(kw=kw, page=page)
-        polite_sleep()
+        polite_sleep(1.0, "rakuten")
         r = sess.get(url, timeout=25)
         if r.status_code != 200:
             break
