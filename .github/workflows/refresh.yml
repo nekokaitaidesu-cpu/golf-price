@@ -1,9 +1,18 @@
 name: refresh
-# 毎日2:00(JST)に全機種の価格を取得→スマホサイト(golf-price-mobile)を更新。
-# PCの電源に依存しないクラウド実行。前日比の基準 history.db は data ブランチで永続化。
+# 1日8回(2/10/12/14/16/18/20/22時 JST)に全機種の価格を取得→スマホサイト更新。
+# ★前日比の基準(history.db)は「2:00の回だけ」記録する（--record-history）。
+#   10:00〜22:00の回は価格・サイトを更新するが履歴には触れない＝前日比の基準は2:00のまま不動。
+# PCの電源に依存しないクラウド実行。history.db は data ブランチで永続化。
 on:
   schedule:
-    - cron: "0 17 * * *"      # 17:00 UTC = 翌 02:00 JST
+    - cron: "0 17 * * *"     # 02:00 JST ★基準（履歴を記録する回）
+    - cron: "0 1 * * *"      # 10:00 JST
+    - cron: "0 3 * * *"      # 12:00 JST
+    - cron: "0 5 * * *"      # 14:00 JST
+    - cron: "0 7 * * *"      # 16:00 JST
+    - cron: "0 9 * * *"      # 18:00 JST
+    - cron: "0 11 * * *"     # 20:00 JST
+    - cron: "0 13 * * *"     # 22:00 JST
   workflow_dispatch:
     inputs:
       limit:
@@ -46,7 +55,16 @@ jobs:
           RAKUTEN_APP_ID: ${{ secrets.RAKUTEN_APP_ID }}
           RAKUTEN_ACCESS_KEY: ${{ secrets.RAKUTEN_ACCESS_KEY }}
           MODEL_LIMIT: ${{ github.event.inputs.limit }}
-        run: python refresh_rankings.py --record-history
+          # 2:00 の回(cron 0 17)だけ履歴を記録＝前日比の基準。それ以外は記録しない。
+          IS_BASELINE: ${{ github.event.schedule == '0 17 * * *' }}
+        run: |
+          if [ "$IS_BASELINE" = "true" ]; then
+            echo "★基準回: 履歴を記録します(--record-history)"
+            python refresh_rankings.py --record-history
+          else
+            echo "通常回: 価格のみ更新（履歴は2:00のまま）"
+            python refresh_rankings.py
+          fi
 
       - name: publish site -> golf-price-mobile
         if: ${{ github.event.inputs.limit == '' }}   # 全機種のときだけ本番サイトを更新
@@ -76,6 +94,11 @@ jobs:
       - name: persist history.db + .cache (data ブランチ)
         if: ${{ github.event.inputs.limit == '' }}   # 全機種のときだけ永続化（テスト実行では上書きしない）
         run: |
+          # 安全策: history.db が空/欠損なら前日比の基準を壊さないため永続化を中止
+          if [ ! -s history.db ]; then
+            echo "history.db が空/無し → 永続化スキップ（基準を保護）"
+            exit 0
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -q --orphan data-tmp

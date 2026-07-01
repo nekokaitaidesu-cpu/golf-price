@@ -3,12 +3,14 @@
 毎日の価格取得を**クラウドで自動実行**するようにした記録。PCの電源に依存しない。
 
 ## 仕組み
-- `.github/workflows/refresh.yml` が**毎日2:00(JST)**に起動（cron `0 17 * * *` UTC）
+- `.github/workflows/refresh.yml` が**1日8回(2/10/12/14/16/18/20/22時 JST)**に起動
 - 全機種を取得（中古＝**楽天公式API**／フリマ＝Yahoo落札／一部ゴルフパートナー）
 - スマホ用サイトを生成し **`golf-price-mobile`** へ自動push（デプロイキー使用）
   → https://nekokaitaidesu-cpu.github.io/golf-price-mobile/
-- 前日比の基準 `history.db` と `.cache/` を **`data` ブランチ**に保存（force-push）
-- 所要 約40分（実測）
+- **前日比の基準は「2:00の回だけ」記録**（`--record-history`）。10:00〜22:00の回は価格・サイトを
+  更新するが履歴には触れない＝前日比の基準は2:00のまま不動。基準回の判定は cron `0 17 * * *`。
+- `history.db` と `.cache/` を **`data` ブランチ**に保存（force-push、空DBなら保護のためスキップ）
+- 所要 約40分/回（実測）。公開リポなので Actions は無料・無制限
 
 ## 楽天API（2026新版）
 - 楽天は検索ページを datacenter IP からブロックするため、公式API `openapi.rakuten.co.jp/ichibams/api/IchibaItem/Search` を使用
