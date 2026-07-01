@@ -7,6 +7,7 @@
 手動実行: python refresh_rankings.py
 """
 
+import os
 import sys
 import time
 from pathlib import Path
@@ -60,6 +61,11 @@ def main():
     targets = [(m.key, f"{m.brand} {m.label}") for m in CATALOG]
     targets += [(k, m.label) for k, m in MODELS.items()]
     targets += [(k, e["label"]) for k, e in registry.load().items()]
+
+    # 動作検証用: MODEL_LIMIT=N で先頭N機種だけ実行（本番は未設定）
+    limit = os.environ.get("MODEL_LIMIT")
+    if limit and limit.isdigit():
+        targets = targets[: int(limit)]
 
     log(f"=== 自動更新開始 {time.strftime('%Y-%m-%d %H:%M:%S')} / 全{len(targets)}機種 ===")
     ok = ng = 0

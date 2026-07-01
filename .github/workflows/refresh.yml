@@ -1,0 +1,85 @@
+name: refresh
+# 毎日2:00(JST)に全機種の価格を取得→スマホサイト(golf-price-mobile)を更新。
+# PCの電源に依存しないクラウド実行。前日比の基準 history.db は data ブランチで永続化。
+on:
+  schedule:
+    - cron: "0 17 * * *"      # 17:00 UTC = 翌 02:00 JST
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: "テスト用: 先頭N機種だけ実行（空=全機種）"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install requests beautifulsoup4
+
+      - name: restore history.db (前日比の基準)
+        run: |
+          if git ls-remote --exit-code --heads origin data >/dev/null 2>&1; then
+            git fetch origin data --depth 1
+            git checkout origin/data -- history.db && echo "history.db 復元" || echo "history.db なし"
+            git reset -q
+          else
+            echo "data ブランチ未作成（初回）"
+          fi
+
+      - name: run refresh
+        env:
+          RAKUTEN_APP_ID: ${{ secrets.RAKUTEN_APP_ID }}
+          RAKUTEN_ACCESS_KEY: ${{ secrets.RAKUTEN_ACCESS_KEY }}
+          MODEL_LIMIT: ${{ github.event.inputs.limit }}
+        run: python refresh_rankings.py --record-history
+
+      - name: publish site -> golf-price-mobile
+        if: ${{ github.event.inputs.limit == '' }}   # 全機種のときだけ本番サイトを更新
+        env:
+          DEPLOY_KEY: ${{ secrets.MOBILE_DEPLOY_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts 2>/dev/null
+          GIT_SSH_COMMAND="ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes" \
+            git clone --depth 1 git@github.com:nekokaitaidesu-cpu/golf-price-mobile.git mobilepush
+          cp -f site/data.json mobilepush/data.json
+          cp -f site/index.html mobilepush/index.html
+          cd mobilepush
+          touch .nojekyll
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "変更なし"
+          else
+            git commit -q -m "update $(date -u +'%Y-%m-%d %H:%M')UTC"
+            GIT_SSH_COMMAND="ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes" git push
+          fi
+
+      - name: persist history.db + .cache (data ブランチ)
+        if: ${{ github.event.inputs.limit == '' }}   # 全機種のときだけ永続化（テスト実行では上書きしない）
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -q --orphan data-tmp
+          git reset -q
+          git add -f history.db .cache
+          git commit -q -m "data $(date -u +'%Y-%m-%d %H:%M')UTC"
+          git push -f origin data-tmp:data
