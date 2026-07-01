@@ -88,6 +88,9 @@
   .ranktable .brand { font-size:11px; color:var(--muted); }
   .ranktable .profit { font-weight:800; }
   .ranktable .profit.win { color:var(--accent); } .ranktable .profit.loss { color:#ff7a85; }
+  .ranktable td.digcell .dig { font-weight:800; color:var(--accent2); }
+  .ranktable td.digcell .src { font-size:10px; color:var(--muted); margin-top:2px; }
+  .ranktable td.digcell .muted { color:var(--muted); }
   .ranktable .pending { color:var(--warn); }
   .ranktable td.usedmin a { color:var(--accent2); text-decoration:none; }
   .ranktable td.usedmin .src { font-size:10px; color:var(--muted); margin-top:2px; line-height:1.3; max-width:160px; }
@@ -116,12 +119,24 @@
   .catpick:hover { border-color:var(--accent); }
   .catpick.all { border-color:var(--accent2); }
   .catpick .cnt { font-size:11px; font-weight:400; color:var(--muted); }
+  .searchbox { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:4px 0 16px;
+               background:var(--card); border:1px solid var(--line); border-radius:12px; padding:10px 12px; }
+  .searchbox input { flex:1; min-width:240px; font-size:13px; padding:9px 11px; border-radius:9px;
+                     border:1px solid var(--line); background:#101a24; color:var(--txt); }
+  #lqmsg { font-size:12px; color:var(--muted); }
+  .lcard h3 a { color:var(--txt); text-decoration:none; }
+  .lcard h3 a:hover { color:var(--accent2); }
+  .profit.win { color:var(--accent); } .profit.loss { color:#ff7a85; }
+  .profit { font-weight:800; }
+  .pending2 { color:var(--warn); font-size:12px; font-weight:400; }
+  .ho2 { font-size:10px; color:var(--warn); margin-left:5px; }
 </style>
 </head>
 <body>
 <header>
   <h1>⛳ ゴルフクラブ中古価格調査</h1>
   <div class="sub">サイト横断でモデル名を名寄せし、グレード別に ①中古平均 ②最安値 ③フリマ実売平均 を集計</div>
+  <div class="sub" id="updated" style="margin-top:5px"></div>
 </header>
 <div class="wrap">
   <div class="controls">
@@ -135,6 +150,12 @@
     <button id="refresh" title="キャッシュを無視して再取得">↻ 最新</button>
     <button id="rankbtn" title="人気機種の損益ランキング">📊 損益ランキング</button>
     <span class="meta" id="meta"></span>
+  </div>
+
+  <div class="searchbox">
+    <input id="lq" type="text" placeholder="🔎 出品ページ名・シャフトで検索（例: xxio 12 S ／ Diamana ／ ピン G430 SFT）">
+    <button class="primary" id="lqbtn">出品名で検索</button>
+    <span id="lqmsg"></span>
   </div>
 
   <div class="addbox">
@@ -151,6 +172,9 @@
 
 <script>
 const yen = n => (n==null) ? "—" : "¥" + n.toLocaleString();
+// クラブ種類の短縮ラベル（ランキング行の説明用）
+const CAT_SHORT = { driver:"ドライバー", fw:"FW", ut:"UT", iron:"アイアン", chipper:"チッパー" };
+const catShort = c => CAT_SHORT[c] || c || "";
 const $ = s => document.querySelector(s);
 // グレードのうち注目（◆◆◆ MAX=本命、MAX標準、Triple Diamond）
 const FEATURE = new Set(["triple_diamond_max","max","triple_diamond"]);
@@ -317,7 +341,7 @@ async function runRanking(cat, refresh=false){
   const catName = cat==="__all__" ? "すべて" : (await (await fetch("/api/categories")).json()).find(c=>c.key===cat)?.label || "";
   const estMin = Math.max(1, Math.ceil(targets.length * 30 / 60));   // 1機種30秒換算
   $("#grades").innerHTML =
-    `<div class="rankhead">［${catName}］中古最安で仕入れ→フリマ実売平均で売却の試算損益。<b>列見出しをクリックで並び替え</b>。行クリックで別タブに詳細。
+    `<div class="rankhead">［${catName}］「掘り出し」＝最安が2番目に安い出品より何％安いか。<b>大きいほど1個だけ突出して安い＝掘り出し物</b>。列見出しクリックで並び替え、行クリックで別タブに詳細。
        <a class="back" id="rankback">← カテゴリ選択へ</a></div>
      <div class="rankbar">
        <button id="rankrefresh">↻ ランキングを今すぐ最新取得（${targets.length}機種・約${estMin}分）</button>
@@ -330,13 +354,13 @@ async function runRanking(cat, refresh=false){
        <th class="sortable" data-key="used_min">中古最安 <span class="ind"></span></th>
        <th class="sortable" data-key="prev_pct">前日比 <span class="ind"></span></th>
        <th class="sortable" data-key="flea_avg">フリマ平均 <span class="ind"></span></th>
-       <th class="sortable" data-key="profit">試算損益 <span class="ind"></span></th>
+       <th class="sortable" data-key="dig_pct" title="最安が2番目に安い出品より何％安いか。大きいほど1個だけ突出して安い＝掘り出し物">掘り出し <span class="ind"></span></th>
      </tr></thead><tbody id="rankbody"></tbody></table>`;
   $("#rankback").onclick = loadRanking;
   $("#rankrefresh").onclick = (e)=>{ e.target.disabled = true; runRanking(cat, true); };
   $("#rankpublish").onclick = ()=> publishSite();
-  // 既定は試算損益の良い順。見出しクリックでソート切替
-  RANK_STATE = { rows: [], key: "profit", dir: "desc" };
+  // 既定は掘り出し率の高い順。見出しクリックでソート切替
+  RANK_STATE = { rows: [], key: "dig_pct", dir: "desc" };
   document.querySelectorAll(".ranktable th.sortable").forEach(th=>{
     th.onclick = ()=> sortRanking(th.dataset.key);
   });
@@ -373,15 +397,15 @@ async function publishSite(append=false){
 }
 
 // ランキングの状態（行データ＋現在のソート）
-let RANK_STATE = { rows: [], key: "profit", dir: "desc" };
+let RANK_STATE = { rows: [], key: "dig_pct", dir: "desc" };
 // 列ごとの既定の並び順（中古最安は安い順＝昇順）
-const RANK_DEFAULT_DIR = { brand: "asc", used_min: "asc", prev_pct: "asc", flea_avg: "desc", profit: "desc" };
+const RANK_DEFAULT_DIR = { brand: "asc", used_min: "asc", prev_pct: "asc", flea_avg: "desc", profit: "desc", dig_pct: "desc" };
 
 function rankRowHTML(r, i){
-  const has = r.profit!=null;
-  const cls = !has?"":(r.profit>=0?"win":"loss");
-  const ptxt = !has?`<span class="pending">データ不足</span>`
-    : `${r.profit>=0?'＋':'−'}${yen(Math.abs(r.profit))}`;
+  const dig = r.dig_pct;
+  const digCell = (dig==null) ? `<span class="muted">—</span>`
+    : `<span class="dig">${dig}%安</span>`
+      + (r.used_second!=null ? `<div class="src">2番目 ${yen(r.used_second)}</div>` : ``);
   const shop = (r.used_min_shop||"").replace(/</g,"&lt;");
   const minCell = r.used_min==null ? "—" :
     `<a href="${r.used_min_url||'#'}" target="_blank" rel="noopener">${yen(r.used_min)}</a>`
@@ -392,11 +416,11 @@ function rankRowHTML(r, i){
     : `<span class="prevpct ${pc<0?'down':'up'}">${pc<0?'':'＋'}${pc}%</span>`;
   return `<tr data-key="${r.key}">
     <td class="rank">${i+1}</td>
-    <td class="model">${r.label}<div class="brand">${r.brand}・${r.year}　中古${r.used_count}/フリマ${r.flea_count}件</div></td>
+    <td class="model">${r.label}<div class="brand">${r.brand}・${r.year}・${catShort(r.category)}　中古${r.used_count}/フリマ${r.flea_count}件</div></td>
     <td class="usedmin">${minCell}</td>
     <td class="prev">${prevCell}</td>
     <td>${yen(r.flea_avg)}</td>
-    <td class="profit ${cls}">${ptxt}</td></tr>`;
+    <td class="digcell">${digCell}</td></tr>`;
 }
 
 function renderRankBody(){
@@ -437,6 +461,55 @@ function sortRanking(key){
     RANK_STATE.dir = RANK_DEFAULT_DIR[key] || "desc";
   }
   renderRankBody();
+}
+
+// === 出品ページ名の横断検索（取得済みキャッシュから）===
+async function listingSearch(){
+  const q = $("#lq").value.trim();
+  const msg = $("#lqmsg");
+  if(!q){ msg.textContent = "キーワードを入力してください"; return; }
+  msg.textContent = "";
+  RANK_CANCEL = true;                 // 進行中のランキング読込があれば止める
+  $("#meta").textContent = `出品名検索「${q}」`;
+  $("#status").innerHTML = `<span class="loading">「${q}」で出品ページ名を検索中…</span>`;
+  $("#grades").innerHTML = ""; $("#note").innerHTML = "";
+  try{
+    const d = await (await fetch(`/api/listing-search?q=${encodeURIComponent(q)}`)).json();
+    renderListingSearch(d);
+  }catch(e){ $("#status").innerHTML = `<span class="err">通信エラー: ${e}</span>`; }
+}
+
+function listingRow(s){
+  return `<tr>
+    <td class="price ${s.sold?'sold':''}">${yen(s.price)}</td>
+    <td><a href="${s.url}" target="_blank" rel="noopener">${(s.title||'').replace(/</g,'&lt;')}</a></td>
+    <td class="shop">${(s.shop||'').replace(/</g,'&lt;')}${s.head_only?'<span class="ho2">ヘッドのみ</span>':''}</td></tr>`;
+}
+
+function renderListingSearch(d){
+  if(!d.results || !d.results.length){
+    $("#status").innerHTML = `<span class="loading">「${d.q}」に一致する出品は見つかりませんでした。`
+      + `（📊損益ランキングで取得済みの機種の出品ページ名から検索します）</span>`;
+    return;
+  }
+  $("#status").innerHTML = `<span style="color:var(--accent)">「${d.q}」に一致：${d.models}機種・${d.count}出品</span>`;
+  const cards = d.results.map(r=>{
+    const has = r.profit!=null;
+    const ptxt = !has ? `<span class="pending2">損益データ不足</span>`
+      : `<span class="profit ${r.profit>=0?'win':'loss'}">試算損益 ${r.profit>=0?'＋':'−'}${yen(Math.abs(r.profit))}</span>`;
+    const body = r.listings.length
+      ? `<table><thead><tr><th>価格</th><th>出品ページ名（全${r.match_count}件）</th><th>店舗／売れた場所</th></tr></thead>
+         <tbody>${r.listings.map(listingRow).join("")}</tbody></table>`
+      : `<div class="emptylist">機種名が一致（出品ページ名の一致なし）</div>`;
+    return `<div class="gcard lcard">
+      <h3><a href="/?model=${encodeURIComponent(r.key)}" target="_blank">${r.label}</a>
+        <span class="pill">${r.brand}・${r.year}・${catShort(r.category)}</span> ${ptxt}</h3>
+      ${body}</div>`;
+  }).join("");
+  $("#grades").innerHTML = `<div class="cardgrid" style="grid-template-columns:1fr">${cards}</div>`;
+  $("#note").innerHTML = `※ 📊損益ランキングで取得済み（キャッシュ済み）機種の出品ページ名から、`
+    + `入力した全キーワードを含む出品を抽出します（大小文字・全半角は無視）。`
+    + `ページ名にシャフト名やスペックが載っていれば、それでピンポイントに絞り込めます。`;
 }
 
 function gradeCard(g){
@@ -497,10 +570,16 @@ async function search(refresh=false){
 $("#go").onclick = ()=>search(false);
 $("#refresh").onclick = ()=>search(true);
 $("#rankbtn").onclick = loadRanking;
+$("#lqbtn").onclick = listingSearch;
+$("#lq").addEventListener("keydown", e=>{ if(e.key==="Enter") listingSearch(); });
 $("#add").onclick = addModel;
 $("#gpurl").addEventListener("keydown", e=>{ if(e.key==="Enter") addModel(); });
 // 機種を選んだ時点で読み込む（ページ表示時は何も読み込まない）
 $("#model").addEventListener("change", ()=>{ if($("#model").value) search(false); });
+// データの最終取得時刻をヘッダーに表示（クラウド自動更新→start.batで取り込み済みのもの）
+fetch("/api/updated").then(r=>r.json()).then(d=>{
+  if(d.updated) $("#updated").innerHTML = `📅 データ取得: <b>${d.updated}</b> <span style="color:var(--muted)">（クラウドが1日8回自動更新／起動時に同期）</span>`;
+}).catch(()=>{});
 loadModels().then(()=>{
   // ?model=キー で開かれた場合はその機種の詳細を直接表示（別タブからの遷移）
   const pm = new URLSearchParams(location.search).get("model");

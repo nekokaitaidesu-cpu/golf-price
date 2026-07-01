@@ -81,7 +81,12 @@ def api_ranking_one(key: str, refresh: bool = False):
         cache.put(ck, d)
     m = CATALOG_BY_KEY[key]
     g = d.get("gap") or {}
-    cheapest = (d.get("used_samples") or [{}])[0]   # 最安の出品（価格昇順の先頭）
+    samples = d.get("used_samples") or []           # 価格昇順（安い順）
+    cheapest = samples[0] if samples else {}         # 最安の出品（先頭）
+    # 掘り出し率：最安が2番目に安い出品より何％安いか（大きいほど1個だけ突出して安い）
+    p1 = cheapest.get("price")
+    p2 = samples[1].get("price") if len(samples) >= 2 else None
+    dig_pct = round((p2 - p1) / p2 * 100) if (p1 and p2 and p2 > 0) else None
     # 前日（前回取得日）の最安値との比較（％）
     cur_min = d["used"]["min"]
     cur_date = (d.get("_fetched_at") or "")[:10] or time.strftime("%Y-%m-%d")
@@ -97,7 +102,76 @@ def api_ranking_one(key: str, refresh: bool = False):
         "prev_min": prev_min, "prev_pct": prev_pct,
         "flea_avg": d["flea_sold"]["avg"], "flea_count": d["flea_sold"]["count"],
         "profit": g.get("profit"),
+        "used_second": p2, "dig_pct": dig_pct,   # 2番目に安い価格／掘り出し率
     }
+
+
+@app.get("/api/updated")
+def api_updated():
+    """データの最終取得時刻（キャッシュ内 _fetched_at の最新）を返す。
+
+    クラウド(GitHub Actions)が更新→start.batで取り込んだデータの取得時刻を
+    PC版ヘッダーに表示するため。スマホ版の generated_at 表示に相当。
+    """
+    latest = ""
+    for m in CATALOG:
+        d = cache.get(f"{m.key}_p2", ttl=10 ** 9)
+        fa = (d or {}).get("_fetched_at", "")
+        if fa and fa > latest:
+            latest = fa
+    return {"updated": latest}
+
+
+@app.get("/api/listing-search")
+def api_listing_search(q: str = Query(...), category: str = Query("")):
+    """取得済み（キャッシュ済み）機種の出品ページ名を横断検索する。
+
+    入力した全キーワード（空白区切り・AND）を含む出品だけを抽出。
+    ページ名にシャフト名やスペックが載っていれば、それでピンポイントに絞り込める。
+    機種名（メーカー＋機種名＋年）が一致した場合も拾う。
+    """
+    import unicodedata
+
+    def norm(s: str) -> str:
+        return unicodedata.normalize("NFKC", s or "").lower()
+
+    tokens = [t for t in norm(q).split() if t]
+    if not tokens:
+        return {"q": q, "models": 0, "count": 0, "results": []}
+
+    LONG_TTL = 10 ** 9          # 古いキャッシュでも読む（ランキングと同じ母集団）
+    results = []
+    for m in CATALOG:
+        if category and m.category != category:
+            continue
+        d = cache.get(f"{m.key}_p2", ttl=LONG_TTL)
+        if not d:
+            continue
+        name_blob = norm(f"{m.brand} {m.label} {m.year}")
+        name_hit = all(t in name_blob for t in tokens)
+        listings = []
+        for kind, sold in (("used_samples", False), ("flea_samples", True)):
+            for s in d.get(kind) or []:
+                if all(t in norm(s.get("title", "")) for t in tokens):
+                    listings.append({
+                        "price": s.get("price"), "title": s.get("title", ""),
+                        "url": s.get("url", ""), "shop": s.get("shop", ""),
+                        "sold": sold, "head_only": s.get("head_only", False),
+                    })
+        if not listings and not name_hit:
+            continue
+        listings.sort(key=lambda x: (x["price"] is None, x["price"] or 0))
+        g = d.get("gap") or {}
+        results.append({
+            "key": m.key, "label": f"{m.brand} {m.label}", "brand": m.brand,
+            "year": m.year, "category": m.category, "profit": g.get("profit"),
+            "used_min": (d.get("used") or {}).get("min"),
+            "match_count": len(listings), "listings": listings,
+        })
+    # 試算損益の良い順（Noneは末尾）
+    results.sort(key=lambda r: (r["profit"] is None, -(r["profit"] or 0)))
+    return {"q": q, "models": len(results),
+            "count": sum(r["match_count"] for r in results), "results": results}
 
 
 @app.post("/api/models/add")
