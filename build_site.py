@@ -24,7 +24,12 @@ def _model_entry(m, d: dict) -> dict:
     used = d.get("used") or {}
     flea = d.get("flea_sold") or {}
     gap = d.get("gap") or {}
-    cheapest = (d.get("used_samples") or [{}])[0]
+    samples = d.get("used_samples") or []
+    cheapest = samples[0] if samples else {}
+    # 掘り出し率：最安が2番目に安い出品より何％安いか（大きいほど1個だけ突出して安い）
+    p1 = cheapest.get("price")
+    p2 = samples[1].get("price") if len(samples) >= 2 else None
+    dig_pct = round((p2 - p1) / p2 * 100) if (p1 and p2 and p2 > 0) else None
     # 前日（前回取得日）の最安値との比較（％）
     cur_min = used.get("min")
     cur_date = (d.get("_fetched_at") or "")[:10] or time.strftime("%Y-%m-%d")
@@ -40,6 +45,7 @@ def _model_entry(m, d: dict) -> dict:
         "gap_used": gap.get("used_base"),
         "gap_flea": gap.get("flea_base"),
         "prev_pct": prev_pct,
+        "used_second": p2, "dig_pct": dig_pct,
         "used_min_shop": cheapest.get("shop", ""),
         "used_min_url": cheapest.get("url", ""),
         "used_min_head_only": cheapest.get("head_only", False),

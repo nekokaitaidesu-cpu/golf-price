@@ -43,6 +43,7 @@
   .row .pp { font-weight:700; }
   .row .pp.down { color:var(--accent); }   /* 安くなった=緑 */
   .row .pp.up { color:var(--loss); }        /* 同額以上=赤 */
+  .row .dig { font-weight:700; color:var(--accent2); }   /* 掘り出し率 */
   .sortbar button { font-size:12px; padding:9px 6px; }
   .chev { color:var(--muted); flex:none; font-size:18px; }
 
@@ -68,6 +69,27 @@
   .empty { color:var(--muted); font-size:12px; padding:6px 2px; }
   .foot { color:var(--muted); font-size:11px; margin-top:24px; text-align:center; line-height:1.7; }
   .loading { color:var(--warn); padding:20px; text-align:center; }
+
+  .searchbar { display:flex; gap:8px; margin-bottom:10px; }
+  .searchbar input { flex:1; min-width:0; font-size:14px; padding:11px 12px; border-radius:10px;
+                     border:1px solid var(--line); background:var(--card); color:var(--txt); }
+  .searchbar button { font-size:14px; padding:0 14px; border-radius:10px; border:1px solid var(--line);
+                      background:var(--card); color:var(--muted); cursor:pointer; flex:none; }
+  .searchtip { font-size:11px; color:var(--muted); line-height:1.6; margin:0 2px 12px; }
+  .scount { font-size:12px; color:var(--muted); margin:0 2px 10px; }
+  .srow { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px; margin-bottom:10px; }
+  .srow .top { display:flex; align-items:center; gap:10px; cursor:pointer; }
+  .srow .top .mid { flex:1; min-width:0; }
+  .srow .top .nm { font-size:15px; font-weight:600; }
+  .srow .top .meta { font-size:11px; color:var(--muted); margin-top:2px; }
+  .srow .top .pr { text-align:right; flex:none; }
+  .srow .top .profit { font-size:16px; font-weight:800; }
+  .srow .top .profit.win { color:var(--accent); } .srow .top .profit.loss { color:var(--loss); }
+  .hit { display:flex; gap:8px; align-items:center; background:#101a24; border:1px solid var(--line);
+         border-radius:8px; padding:8px 10px; margin-top:6px; text-decoration:none; color:var(--txt); }
+  .hit .hp { font-size:13px; font-weight:700; flex:none; } .hit .hp.sold { color:var(--loss); }
+  .hit .ht { font-size:11px; color:var(--muted); flex:1; min-width:0; line-height:1.5; }
+  .hit .hg { color:var(--muted); flex:none; font-size:14px; }
 </style>
 </head>
 <body>
@@ -79,8 +101,11 @@
 
 <script>
 const yen = n => (n==null) ? "—" : "¥" + Number(n).toLocaleString();
+// クラブ種類の短縮ラベル（一覧の説明行用）
+const CAT_SHORT = { driver:"ドライバー", fw:"FW", ut:"UT", iron:"アイアン", chipper:"チッパー" };
+const catShort = c => CAT_SHORT[c] || ((DATA&&DATA.categories.find(x=>x.key===c)||{}).label) || c || "";
 const $ = s => document.querySelector(s);
-let DATA = null, SORT = "profit";
+let DATA = null, SORT = "dig";
 
 async function load(){
   try{
@@ -94,14 +119,25 @@ window.addEventListener("hashchange", route);
 
 function param(){
   const h = new URLSearchParams(location.hash.slice(1));
-  return { c: h.get("c"), m: h.get("m") };
+  return { c: h.get("c"), m: h.get("m"), q: h.get("q") };
 }
 function go(hash){ location.hash = hash; }
+function norm(s){ return (s||"").normalize("NFKC").toLowerCase(); }
+function goSearch(v){ v=(v||"").trim(); if(v) go("q=" + encodeURIComponent(v)); }
+function searchBar(value){
+  return `<div class="searchbar">
+     <input id="hq" type="text" placeholder="🔎 出品名・シャフトで検索（例: Diamana / G430 SFT）"
+            value="${(value||'').replace(/"/g,'&quot;')}"
+            onkeydown="if(event.key==='Enter')goSearch(this.value)">
+     <button onclick="goSearch(document.getElementById('hq').value)">検索</button>
+   </div>`;
+}
 
 function route(){
   if(!DATA) return;
-  const { c, m } = param();
+  const { c, m, q } = param();
   if(m) return viewModel(m);
+  if(q != null) return viewSearch(q);
   if(c) return viewList(c);
   return viewHome();
 }
@@ -114,7 +150,7 @@ function setHead(title, sub, back){
 // --- ホーム：カテゴリ ---
 function viewHome(){
   setHead("ゴルフ中古価格", `更新 ${DATA.generated_at}`, false);
-  $("#app").innerHTML = `<div class="catgrid">` + DATA.categories.map(c=>
+  $("#app").innerHTML = searchBar("") + `<div class="catgrid">` + DATA.categories.map(c=>
     `<button class="catbtn" onclick="go('c=${c.key}')">${c.label}<span class="c">${c.count}機種</span></button>`
   ).join("") + `</div>
     <div class="foot">中古最安で仕入れ→フリマ実売平均で売却の試算損益。<br>
@@ -130,7 +166,7 @@ function viewList(cat){
     if(SORT==="min"){ const av=a.used.min, bv=b.used.min; if(av==null||bv==null) return (av==null)-(bv==null); return av-bv; }
     if(SORT==="prev"){ const av=a.prev_pct, bv=b.prev_pct; if(av==null||bv==null) return (av==null)-(bv==null); return av-bv; }
     if(SORT==="brand"){ return String(a.brand||"").localeCompare(String(b.brand||""),"ja") || String(a.label||"").localeCompare(String(b.label||""),"ja"); }
-    const av=a.profit, bv=b.profit; if(av==null||bv==null) return (av==null)-(bv==null); return bv-av;
+    const av=a.dig_pct, bv=b.dig_pct; if(av==null||bv==null) return (av==null)-(bv==null); return bv-av;
   });
   const rows = sorted.map((m,i)=>{
     const has = m.profit!=null, cls = !has?"":(m.profit>=0?"win":"loss");
@@ -139,16 +175,18 @@ function viewList(cat){
     const pc = m.prev_pct;
     const pp = (pc==null) ? "" :
       ` ・前日<span class="pp ${pc<0?'down':'up'}">${pc<0?'':'＋'}${pc}%</span>`;
+    const dg = m.dig_pct;
+    const dgtxt = (dg==null) ? "" : ` ・<span class="dig">掘り出し${dg}%</span>`;
     return `<div class="row" onclick="go('m=${m.key}')">
       <div class="rk">${i+1}</div>
       <div class="mid"><div class="nm">${m.label}</div>
-        <div class="meta">${m.brand}・${m.year}　中古${m.used.count}/フリマ${m.flea.count}件</div></div>
-      <div class="pr">${ptxt}<div class="mn">最安${yen(m.used.min)}${pp}</div></div>
+        <div class="meta">${m.brand}・${m.year}・${catShort(m.category)}　中古${m.used.count}/フリマ${m.flea.count}件</div></div>
+      <div class="pr">${ptxt}<div class="mn">最安${yen(m.used.min)}${dgtxt}${pp}</div></div>
       <div class="chev">›</div></div>`;
   }).join("");
-  $("#app").innerHTML =
+  $("#app").innerHTML = searchBar("") +
     `<div class="sortbar">
-       <button id="s_profit" class="${SORT==='profit'?'on':''}" onclick="setSort('profit')">損益順</button>
+       <button id="s_dig" class="${SORT==='dig'?'on':''}" onclick="setSort('dig')">掘り出し</button>
        <button id="s_min" class="${SORT==='min'?'on':''}" onclick="setSort('min')">最安順</button>
        <button id="s_prev" class="${SORT==='prev'?'on':''}" onclick="setSort('prev')">前日比</button>
        <button id="s_brand" class="${SORT==='brand'?'on':''}" onclick="setSort('brand')">メーカー順</button>
@@ -194,6 +232,65 @@ function viewModel(key){
     ${flea.length ? flea.map(s=>shopRow(s,true)).join("") : `<div class="empty">該当なし</div>`}
     <div class="foot">価格は ${DATA.generated_at} 時点。出品リンクは在庫切れの場合があります。</div>`;
   window.scrollTo(0,0);
+}
+
+// --- 出品ページ名・シャフト検索 ---
+function viewSearch(q){
+  setHead("出品名・シャフト検索", "ページ名でピンポイント検索", true);
+  $("#app").innerHTML =
+    `<div class="searchbar">
+       <input id="q" type="text" placeholder="例: xxio 12 S / Diamana / G430 SFT"
+              value="${(q||'').replace(/"/g,'&quot;')}">
+       <button onclick="document.getElementById('q').value='';runSearch('')">×</button>
+     </div>
+     <div class="searchtip">出品ページ名に含まれる全キーワードで絞り込みます（大小・全半角は無視）。
+       ページ名にシャフト名やスペックが載っていれば、それで機種を特定できます。</div>
+     <div id="results"></div>`;
+  const inp = $("#q");
+  inp.addEventListener("input", ()=> runSearch(inp.value));
+  runSearch(q || "");
+  inp.focus();
+}
+
+function runSearch(q){
+  const box = document.getElementById("results");
+  if(!box) return;
+  const tokens = norm(q).split(/\s+/).filter(Boolean);
+  if(!tokens.length){ box.innerHTML = `<div class="empty">キーワードを入力してください。</div>`; return; }
+  const out = [];
+  for(const m of DATA.models){
+    const nameHit = tokens.every(t => norm(`${m.label} ${m.brand} ${m.year}`).includes(t));
+    const hits = [];
+    for(const [arr, sold] of [["used_samples",false],["flea_samples",true]]){
+      for(const s of (m[arr]||[])){
+        if(tokens.every(t => norm(s.title).includes(t))) hits.push({...s, sold});
+      }
+    }
+    if(hits.length || nameHit) out.push({ m, hits });
+  }
+  out.sort((a,b)=>{ const av=a.m.profit, bv=b.m.profit;
+    if(av==null||bv==null) return (av==null)-(bv==null); return bv-av; });
+  if(!out.length){ box.innerHTML = `<div class="empty">一致する出品が見つかりませんでした。</div>`; return; }
+  const total = out.reduce((n,o)=> n + o.hits.length, 0);
+  box.innerHTML = `<div class="scount">${out.length}機種・${total}出品が一致</div>`
+    + out.map(searchRowHTML).join("");
+}
+
+function searchRowHTML(o){
+  const m = o.m, has = m.profit!=null, cls = !has?"":(m.profit>=0?"win":"loss");
+  const ptxt = !has ? `<span style="color:var(--muted);font-size:12px">損益不足</span>`
+    : `<span class="profit ${cls}">${m.profit>=0?'＋':'−'}${yen(Math.abs(m.profit))}</span>`;
+  const hits = o.hits.map(s=>`<a class="hit" href="${s.url||'#'}" target="_blank" rel="noopener">
+       <span class="hp ${s.sold?'sold':''}">${yen(s.price)}</span>
+       <span class="ht">${(s.title||'').replace(/</g,'&lt;')}</span>
+       <span class="hg">↗</span></a>`).join("");
+  return `<div class="srow">
+     <div class="top" onclick="go('m=${m.key}')">
+       <div class="mid"><div class="nm">${m.label}</div>
+         <div class="meta">${m.brand}・${m.year}・${catShort(m.category)}　中古最安${yen(m.used.min)}</div></div>
+       <div class="pr">${ptxt}</div><div class="chev">›</div></div>
+     ${hits || `<div class="empty" style="padding:4px 0 0">機種名が一致（出品名の一致なし）</div>`}
+   </div>`;
 }
 
 load();
