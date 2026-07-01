@@ -31,6 +31,10 @@ jobs:
   refresh:
     runs-on: ubuntu-latest
     timeout-minutes: 350
+    # クラウド実行の時刻表記を日本時間に固定（_fetched_at がUTCで記録され、
+    # ヘッダーの取得時刻が9時間ズレて「古い時刻に戻った」ように見えるのを防ぐ）。
+    env:
+      TZ: Asia/Tokyo
     steps:
       - uses: actions/checkout@v4
 
