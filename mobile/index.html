@@ -109,9 +109,10 @@ let DATA = null, SORT = "dig";
 
 async function load(){
   try{
-    // 日付ベースのキャッシュキー（同日は再DLせず、日が変われば最新を取得）
-    const day = new Date().toISOString().slice(0,10);
-    DATA = await (await fetch("data.json?d=" + day)).json();
+    // 分単位のキャッシュキー＝開くたび最新を取得（日中の更新2/10/12…もすぐ反映）。
+    // 同一分内の再読込だけキャッシュを使うので通信も無駄にならない。
+    const t = new Date().toISOString().slice(0,16);
+    DATA = await (await fetch("data.json?t=" + t, {cache:"no-cache"})).json();
   }catch(e){ $("#app").innerHTML = `<div class="empty">データを読み込めませんでした。</div>`; return; }
   route();
 }
