@@ -25,6 +25,7 @@ _*.html
 # 認証情報など（誤コミット防止）
 service_account.json
 *.key
+rakuten_keys.json
 
 # OS
 Thumbs.db
