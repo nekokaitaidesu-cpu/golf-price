@@ -259,6 +259,113 @@ def _term_hit(term: str, c: str, n: str) -> bool:
     return compact(term) in c
 
 
+# ---- 誤マッチ低減ガード（世代番号・年式） ----------------------------------
+# 「シリーズ語＋世代番号」（xxio14 / ゼクシオ12 / m5 等）の検出。
+# ロフト(10.5°/9度)・本数(5本/5S=5本Sフレックス)・番手(7番)・
+# クラブ種別(4u/3w/7i等)の数字は世代とみなさない。
+_SERIES_GEN = re.compile(
+    r"([a-z]+|[ァ-ヶー]+)[ ]?(\d{1,2})"
+    r"(?![\d.])(?![iuwh])(?![srxal](?![0-9a-z]))(?![ ]?[°度本番])"
+)
+# 同一シリーズの英字/カタカナ表記ゆれ（世代番号の照合用）
+_SERIES_SYNONYMS = [
+    ("xxio", "ゼクシオ"),
+    ("stealth", "ステルス"),
+    ("paradym", "パラダイム"),
+    ("rogue", "ローグ"),
+    ("epic", "エピック"),
+]
+_gen_expect_cache: dict[str, dict[str, set[str]]] = {}
+
+
+def _gen_expectations(m: DriverModel) -> dict[str, set[str]]:
+    """機種定義（label/keyword/required）から期待する世代番号を抽出（例 xxio→{14}）。"""
+    exp = _gen_expect_cache.get(m.key)
+    if exp is not None:
+        return exp
+    texts = [m.label, m.keyword]
+    for r in m.required:
+        texts.extend(alt.lstrip("=") for alt in r.split("|"))
+    exp = {}
+    for t in texts:
+        for s, d in _SERIES_GEN.findall(normalize(t)):
+            exp.setdefault(s, set()).add(d.lstrip("0") or "0")
+    for a, b in _SERIES_SYNONYMS:
+        merged = exp.get(a, set()) | exp.get(b, set())
+        if merged:
+            exp[a] = merged
+            exp[b] = merged
+    _gen_expect_cache[m.key] = exp
+    return exp
+
+
+def _generation_ok(n: str, m: DriverModel) -> bool:
+    """タイトル中の世代番号が機種の世代と食い違っていないか
+    （XXIO14 の検索結果に XXIO8 が混ざる等を除外）。番号が読めない出品は通す。"""
+    exp = _gen_expectations(m)
+    if not exp:
+        return True
+    hits = _SERIES_GEN.findall(n)
+    if not hits:
+        return True
+    for series, gens in exp.items():
+        found = {d.lstrip("0") or "0" for s, d in hits
+                 if s == series or s.endswith(series)}
+        if found and not (found & gens):
+            return False
+    return True
+
+
+_YEAR_TOKEN = re.compile(r"(20[0-2][0-9])(年.*)?")
+_model_words_cache: dict[str, set[str]] = {}
+
+
+def _model_words(m: DriverModel) -> set[str]:
+    """年式の文脈判定に使う機種側の語彙（label/keyword/required＋カテゴリ語）。"""
+    ws = _model_words_cache.get(m.key)
+    if ws is None:
+        texts = [m.label, m.keyword, "モデル", "年式"]
+        texts += CLUB_TOKENS.get(m.category, [])
+        for r in m.required:
+            texts.extend(alt.lstrip("=") for alt in r.split("|"))
+        ws = {w for t in texts for w in normalize(t).split() if len(w) >= 2}
+        _model_words_cache[m.key] = ws
+    return ws
+
+
+def _word_related(nb: str, words: set[str]) -> bool:
+    return any(nb == w or (len(w) >= 3 and w in nb) or (len(nb) >= 3 and nb in w)
+               for w in words)
+
+
+def _year_ok(n: str, m: DriverModel) -> bool:
+    """カタログ年式より明確に古い「モデル年」しか書かれていない出品を除外
+    （2021年 APEX のページに『APEX 2014年モデル』が混ざる等）。
+    シャフト等の年（Tour AD DI-6(2020) 等）と区別するため、
+    『◯◯年〜』表記か、機種語/カテゴリ語に隣接した年だけをモデル年とみなす。
+    カタログ年式より新しい年は購入年・セール文言があり得るため許容する。"""
+    if not re.fullmatch(r"20\d\d", m.year or ""):
+        return True
+    toks = n.split()
+    years: list[int] = []
+    for i, w in enumerate(toks):
+        mt = _YEAR_TOKEN.fullmatch(w)
+        if not mt:
+            continue
+        y = int(mt.group(1))
+        if mt.group(2):  # 「2014年モデル」「2014年製」等
+            years.append(y)
+            continue
+        prev_w = toks[i - 1] if i > 0 else ""
+        next_w = toks[i + 1] if i + 1 < len(toks) else ""
+        words = _model_words(m)
+        if _word_related(prev_w, words) or _word_related(next_w, words):
+            years.append(y)
+    if not years:
+        return True
+    return max(years) >= int(m.year) - 1
+
+
 def _catalog_match(title: str, m: DriverModel) -> bool:
     """キー照合。required/excludes の各要素は '|' で代替(OR)を書ける。
     要素を '=' で始めると単語境界マッチ（例 '=m5' は SIM2 や TM50 に誤マッチしない）。
@@ -290,7 +397,8 @@ def _catalog_match(title: str, m: DriverModel) -> bool:
     for r in m.required:
         if not any(_term_hit(alt, c, n) for alt in r.split("|")):
             return False
-    return True
+    # 世代番号・年式の食い違いを弾く（同名の旧世代モデル混入対策）
+    return _generation_ok(n, m) and _year_ok(n, m)
 
 
 def _drop_low_outliers(items: list[Listing], frac: float = 0.35) -> list[Listing]:
