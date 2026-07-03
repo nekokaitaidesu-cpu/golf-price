@@ -91,6 +91,8 @@
   .ranktable td.digcell .dig { font-weight:800; color:var(--accent2); }
   .ranktable td.digcell .src { font-size:10px; color:var(--muted); margin-top:2px; }
   .ranktable td.digcell .muted { color:var(--muted); }
+  .ranktable td.profcell { white-space:nowrap; }
+  .ranktable td.profcell .muted, .ranktable td.prev .muted { color:var(--muted); }
   .ranktable .pending { color:var(--warn); }
   .ranktable td.usedmin a { color:var(--accent2); text-decoration:none; }
   .ranktable td.usedmin .src { font-size:10px; color:var(--muted); margin-top:2px; line-height:1.3; max-width:160px; }
@@ -341,7 +343,7 @@ async function runRanking(cat, refresh=false){
   const catName = cat==="__all__" ? "すべて" : (await (await fetch("/api/categories")).json()).find(c=>c.key===cat)?.label || "";
   const estMin = Math.max(1, Math.ceil(targets.length * 30 / 60));   // 1機種30秒換算
   $("#grades").innerHTML =
-    `<div class="rankhead">［${catName}］「掘り出し」＝最安が2番目に安い出品より何％安いか。<b>大きいほど1個だけ突出して安い＝掘り出し物</b>。列見出しクリックで並び替え、行クリックで別タブに詳細。
+    `<div class="rankhead">［${catName}］「せどり益」＝中古最安で仕入れてメルカリで売った手取り試算（手数料10%・送料1,700円込み）。「掘り出し」＝最安が2番目に安い出品より何％安いか。<b>大きいほど1個だけ突出して安い＝掘り出し物</b>。列見出しクリックで並び替え、行クリックで別タブに詳細。
        <a class="back" id="rankback">← カテゴリ選択へ</a></div>
      <div class="rankbar">
        <button id="rankrefresh">↻ ランキングを今すぐ最新取得（${targets.length}機種・約${estMin}分）</button>
@@ -354,6 +356,7 @@ async function runRanking(cat, refresh=false){
        <th class="sortable" data-key="used_min">中古最安 <span class="ind"></span></th>
        <th class="sortable" data-key="prev_pct">前日比 <span class="ind"></span></th>
        <th class="sortable" data-key="flea_avg">メルカリ平均 <span class="ind"></span></th>
+       <th class="sortable" data-key="profit" title="中古最安で仕入れてメルカリで売った場合の手取り試算：メルカリ平均×0.9 − 送料1,700円 − 中古最安（アイアンは中央値ベース）">せどり益 <span class="ind"></span></th>
        <th class="sortable" data-key="dig_pct" title="最安が2番目に安い出品より何％安いか。大きいほど1個だけ突出して安い＝掘り出し物">掘り出し <span class="ind"></span></th>
      </tr></thead><tbody id="rankbody"></tbody></table>`;
   $("#rankback").onclick = loadRanking;
@@ -414,12 +417,16 @@ function rankRowHTML(r, i){
   const pc = r.prev_pct;
   const prevCell = (pc==null) ? `<span class="muted">—</span>`
     : `<span class="prevpct ${pc<0?'down':'up'}">${pc<0?'':'＋'}${pc}%</span>`;
+  const pf = r.profit;
+  const profCell = (pf==null) ? `<span class="muted">—</span>`
+    : `<span class="profit ${pf>=0?'win':'loss'}">${pf>=0?'＋':'−'}${yen(Math.abs(pf))}</span>`;
   return `<tr data-key="${r.key}">
     <td class="rank">${i+1}</td>
     <td class="model">${r.label}<div class="brand">${r.brand}・${r.year}・${catShort(r.category)}　中古${r.used_count}/フリマ${r.flea_count}件</div></td>
     <td class="usedmin">${minCell}</td>
     <td class="prev">${prevCell}</td>
     <td>${yen(r.flea_avg)}</td>
+    <td class="profcell">${profCell}</td>
     <td class="digcell">${digCell}</td></tr>`;
 }
 

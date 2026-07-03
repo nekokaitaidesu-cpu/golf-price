@@ -25,8 +25,9 @@
   .catbtn .c { display:block; font-size:12px; font-weight:400; color:var(--muted); margin-top:6px; }
 
   .sortbar { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
-  .sortbar button { min-width:0; }
-  .sortbar button { flex:1; font-size:13px; padding:10px; border-radius:10px; border:1px solid var(--line);
+  .sortbar button { min-width:0; white-space:nowrap; }
+  /* 5ボタンなので 3＋2 の2段に折り返す（flex-basis 30%） */
+  .sortbar button { flex:1 1 30%; font-size:13px; padding:10px; border-radius:10px; border:1px solid var(--line);
                     background:var(--card); color:var(--muted); cursor:pointer; }
   .sortbar button.on { border-color:var(--accent); color:var(--accent); }
 
@@ -105,7 +106,7 @@ const yen = n => (n==null) ? "—" : "¥" + Number(n).toLocaleString();
 const CAT_SHORT = { driver:"ドライバー", fw:"FW", ut:"UT", iron:"アイアン", chipper:"チッパー" };
 const catShort = c => CAT_SHORT[c] || ((DATA&&DATA.categories.find(x=>x.key===c)||{}).label) || c || "";
 const $ = s => document.querySelector(s);
-let DATA = null, SORT = "dig";
+let DATA = null, SORT = "profit";
 
 async function load(){
   try{
@@ -161,9 +162,10 @@ function viewHome(){
 // --- ランキング一覧 ---
 function viewList(cat){
   const catLabel = (DATA.categories.find(c=>c.key===cat)||{}).label || cat;
-  setHead(catLabel, "損益ランキング", true);
+  setHead(catLabel, "せどり益ランキング", true);
   const items = DATA.models.filter(m=>m.category===cat);
   const sorted = items.slice().sort((a,b)=>{
+    if(SORT==="profit"){ const av=a.profit, bv=b.profit; if(av==null||bv==null) return (av==null)-(bv==null); return bv-av; }
     if(SORT==="min"){ const av=a.used.min, bv=b.used.min; if(av==null||bv==null) return (av==null)-(bv==null); return av-bv; }
     if(SORT==="prev"){ const av=a.prev_pct, bv=b.prev_pct; if(av==null||bv==null) return (av==null)-(bv==null); return av-bv; }
     if(SORT==="brand"){ return String(a.brand||"").localeCompare(String(b.brand||""),"ja") || String(a.label||"").localeCompare(String(b.label||""),"ja"); }
@@ -187,6 +189,7 @@ function viewList(cat){
   }).join("");
   $("#app").innerHTML = searchBar("") +
     `<div class="sortbar">
+       <button id="s_profit" class="${SORT==='profit'?'on':''}" onclick="setSort('profit')">💰せどり益</button>
        <button id="s_dig" class="${SORT==='dig'?'on':''}" onclick="setSort('dig')">掘り出し</button>
        <button id="s_min" class="${SORT==='min'?'on':''}" onclick="setSort('min')">最安順</button>
        <button id="s_prev" class="${SORT==='prev'?'on':''}" onclick="setSort('prev')">前日比</button>
