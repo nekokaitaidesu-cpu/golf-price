@@ -151,6 +151,7 @@
     <button class="primary" id="go">検索</button>
     <button id="refresh" title="キャッシュを無視して再取得">↻ 最新</button>
     <button id="rankbtn" title="人気機種の損益ランキング">📊 損益ランキング</button>
+    <button id="hotbtn" title="直近実売より大幅に安い販売中出品（メルカリで買ってメルカリで売る候補）">🔥 メルカリ激アツ</button>
     <span class="meta" id="meta"></span>
   </div>
 
@@ -334,6 +335,36 @@ async function loadRanking(){
   document.querySelectorAll(".catpick").forEach(b=>{
     b.onclick = ()=> runRanking(b.dataset.cat);
   });
+}
+
+// === 🔥メルカリ激アツ：直近実売より大幅に安い「販売中」出品（メルカリ→メルカリ） ===
+async function loadHot(){
+  RANK_CANCEL = true;                 // 進行中のランキングロードがあれば止める
+  $("#note").innerHTML = ""; $("#status").innerHTML = `<span class="loading">激アツ出品を集計中…</span>`;
+  $("#meta").textContent = "メルカリ激アツ";
+  let d;
+  try{ d = await (await fetch("/api/hot")).json(); }
+  catch(e){ $("#status").innerHTML = `<span class="err">通信エラー: ${e}</span>`; return; }
+  $("#status").innerHTML = "";
+  const rows = d.rows || [];
+  const body = rows.map((r,i)=>`
+    <tr>
+      <td class="rank">${i+1}</td>
+      <td class="model"><a href="${r.url}" target="_blank" rel="noopener">${(r.title||'').replace(/</g,'&lt;')}</a>
+        <div class="brand">${r.label}・${r.year}・${catShort(r.category)}　データ取得 ${r.fetched_at||"—"}</div></td>
+      <td class="usedmin"><a href="${r.url}" target="_blank" rel="noopener">${yen(r.price)}</a></td>
+      <td>${yen(r.sold_ref)}<div class="src">直近売切の中央値</div></td>
+      <td class="profcell"><span class="profit win">＋${yen(r.profit)}</span></td>
+      <td class="digcell"><span class="dig">${r.pct}%安</span></td>
+    </tr>`).join("");
+  $("#grades").innerHTML =
+    `<div class="rankhead">🔥 <b>メルカリで買ってメルカリで売る</b>候補。「販売中の最安」が「直近売切の中央値」より大幅に安い出品です。
+       見込み益＝売切中央値×0.9 − 送料1,700円 − 販売中価格。<b>状態・付属品・シャフト違いの可能性があるので必ず現物確認を。</b>
+       出品は売れて消えている場合があります（最終取得時点の情報）。</div>
+     ${rows.length ? `<table class="ranktable"><thead><tr>
+       <th class="rank">#</th><th>出品（クリックでメルカリ）</th><th>買値</th><th>売れる目安</th><th>見込み益</th><th>割安度</th>
+     </tr></thead><tbody>${body}</tbody></table>`
+     : `<div class="rankhead">いまは激アツ出品がありません（次の自動更新で入れ替わります）。</div>`}`;
 }
 
 async function runRanking(cat, refresh=false){
@@ -577,6 +608,7 @@ async function search(refresh=false){
 $("#go").onclick = ()=>search(false);
 $("#refresh").onclick = ()=>search(true);
 $("#rankbtn").onclick = loadRanking;
+$("#hotbtn").onclick = loadHot;
 $("#lqbtn").onclick = listingSearch;
 $("#lq").addEventListener("keydown", e=>{ if(e.key==="Enter") listingSearch(); });
 $("#add").onclick = addModel;

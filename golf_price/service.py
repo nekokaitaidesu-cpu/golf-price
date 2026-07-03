@@ -443,6 +443,9 @@ def run_catalog_model(m: DriverModel, pages: int = 2) -> dict:
                 and not detect_head_only(normalize(l.title))
                 and _catalog_match(l.title, m))
 
+    # 🔥メルカリ→メルカリ: 直近実売より大幅に安い「販売中」出品（_fetch_sold が詰める）
+    hot_picks: list[dict] = []
+
     def _fetch_sold():
         """③メルカリ平均: 売り切れ最新5件＋販売中の最安2件（新鮮な実売相場）。"""
         try:
@@ -459,6 +462,18 @@ def run_catalog_model(m: DriverModel, pages: int = 2) -> dict:
             return [l for l in yahoo_auction.search_closed(m.keyword, pages=1, per=50)
                     if _flea_ok(l)]
         active = [l for l in active_raw if _flea_ok(l)]                    # 価格昇順
+        # 販売中最安が「直近実売の中央値で売り直した手取り」を下回っていたら激アツ候補。
+        # 実売3件以上ある機種だけ（相場の裏付けが薄いと誤検出するため）。
+        if len(sold) >= 3:
+            med = statistics.median([l.price for l in sold])
+            for l in active[:MERCARI_ACTIVE_MIN]:
+                est = round(med * (1 - FEE_RATE) - SHIPPING - l.price)
+                if est >= 1000:
+                    hot_picks.append({
+                        "title": l.title, "price": l.price, "url": l.url,
+                        "sold_ref": round(med), "profit": est,
+                        "pct": round((med - l.price) / med * 100),
+                    })
         # プール(売切最新5＋販売中最安2)から安い方3件だけを平均に使う。
         # 安値側を採るためフィルタをすり抜けた部品（シャフト等）が刺さりやすく、
         # 先にプール中央値×0.5未満の極端な安値を落としてから選抜する。
@@ -492,6 +507,7 @@ def run_catalog_model(m: DriverModel, pages: int = 2) -> dict:
         "used": u,
         "flea_sold": f,
         "gap": gap,
+        "mercari_hot": hot_picks,   # 🔥販売中の割安出品（メルカリ→メルカリ候補）
         "headline": {
             "used_avg": u["avg"], "used_min": u["min"],
             "flea_sold_avg": f["avg"], "gap": gap,

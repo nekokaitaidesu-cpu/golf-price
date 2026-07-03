@@ -51,6 +51,8 @@ def _model_entry(m, d: dict) -> dict:
         "used_min_head_only": cheapest.get("head_only", False),
         "used_samples": (d.get("used_samples") or [])[:8],
         "flea_samples": (d.get("flea_samples") or [])[:8],
+        "mercari_hot": (d.get("mercari_hot") or [])[:2],
+        "fetched_at": d.get("_fetched_at", ""),
     }
 
 

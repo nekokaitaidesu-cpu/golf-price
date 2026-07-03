@@ -19,6 +19,11 @@
   .sub { color:var(--muted); font-size:11px; margin-top:2px; }
   .wrap { padding:12px 12px 40px; max-width:680px; margin:0 auto; }
 
+  .hotbtn { display:block; width:100%; background:linear-gradient(135deg,#2a1712,#1e1210); border:1px solid #7a3b22;
+            border-radius:14px; padding:16px 14px; font-size:16px; font-weight:700; color:#ffb38a;
+            text-align:left; cursor:pointer; margin-bottom:12px; }
+  .hotbtn .c { display:block; font-size:12px; font-weight:400; color:var(--muted); margin-top:5px; }
+  .shop .hotp { flex:none; font-size:15px; font-weight:800; color:var(--accent); }
   .catgrid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
   .catbtn { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px 14px;
             font-size:17px; font-weight:700; color:var(--txt); text-align:left; cursor:pointer; }
@@ -137,6 +142,8 @@ function searchBar(value){
 
 function route(){
   if(!DATA) return;
+  const h = new URLSearchParams(location.hash.slice(1));
+  if(h.has("hot")) return viewHot();
   const { c, m, q } = param();
   if(m) return viewModel(m);
   if(q != null) return viewSearch(q);
@@ -152,11 +159,40 @@ function setHead(title, sub, back){
 // --- ホーム：カテゴリ ---
 function viewHome(){
   setHead("ゴルフ中古価格", `更新 ${DATA.generated_at}`, false);
-  $("#app").innerHTML = searchBar("") + `<div class="catgrid">` + DATA.categories.map(c=>
+  const nhot = DATA.models.reduce((n,m)=> n + (m.mercari_hot||[]).length, 0);
+  $("#app").innerHTML = searchBar("")
+    + `<button class="hotbtn" onclick="go('hot=1')">🔥 メルカリ激アツピックアップ
+         <span class="c">直近実売より大幅に安い販売中出品${nhot ? `・いま${nhot}件` : ""}</span></button>`
+    + `<div class="catgrid">` + DATA.categories.map(c=>
     `<button class="catbtn" onclick="go('c=${c.key}')">${c.label}<span class="c">${c.count}機種</span></button>`
   ).join("") + `</div>
     <div class="foot">中古最安で仕入れ→メルカリ平均で売却の試算損益。<br>
     手数料${Math.round(DATA.fee_rate*100)}%・送料${yen(DATA.shipping)}込み。タップで機種→ショップへ。</div>`;
+}
+
+// --- 🔥メルカリ激アツ（メルカリで買ってメルカリで売る候補） ---
+function viewHot(){
+  setHead("🔥 メルカリ激アツ", "販売中が直近売切の中央値より大幅に安い出品", true);
+  const rows = [];
+  for(const m of DATA.models){
+    for(const h of (m.mercari_hot||[])) rows.push({ m, ...h });
+  }
+  rows.sort((a,b)=> (b.profit||0) - (a.profit||0));
+  const html = rows.map(r=>`
+    <a class="shop" href="${r.url||'#'}" target="_blank" rel="noopener">
+      <div class="p">${yen(r.price)}</div>
+      <div class="si">
+        <div class="st">${(r.title||'').replace(/</g,'&lt;')}</div>
+        <div class="ss">${r.m.label}・売切中央値${yen(r.sold_ref)}（${r.pct}%安）</div>
+      </div>
+      <div class="hotp">＋${yen(r.profit)}</div>
+    </a>`).join("");
+  $("#app").innerHTML =
+    `<div class="searchtip">🔥 <b>メルカリで買ってメルカリで売る</b>候補。見込み益＝売切中央値×0.9 −
+     送料${yen(DATA.shipping)} − 販売中価格。<b>状態・付属品・シャフト違いがあり得るので必ず現物確認を。</b>
+     出品は売れて消えている場合があります（${DATA.generated_at} 時点）。</div>`
+    + (html || `<div class="empty">いまは激アツ出品がありません（次の自動更新で入れ替わります）。</div>`);
+  window.scrollTo(0,0);
 }
 
 // --- ランキング一覧 ---

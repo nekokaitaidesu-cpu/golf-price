@@ -106,6 +106,29 @@ def api_ranking_one(key: str, refresh: bool = False):
     }
 
 
+@app.get("/api/hot")
+def api_hot(category: str = Query("")):
+    """🔥メルカリ→メルカリ: 直近実売の中央値より大幅に安い「販売中」出品を
+    キャッシュ横断で集めて見込み益順に返す（再取得はしない）。"""
+    rows = []
+    for m in CATALOG:
+        if category and m.category != category:
+            continue
+        d = cache.get(f"{m.key}_p2", ttl=10 ** 9)
+        if not d:
+            continue
+        for h in d.get("mercari_hot") or []:
+            rows.append({
+                "key": m.key, "label": f"{m.brand} {m.label}", "brand": m.brand,
+                "year": m.year, "category": m.category,
+                "fetched_at": d.get("_fetched_at", ""),
+                **h,
+            })
+    rows.sort(key=lambda r: -(r.get("profit") or 0))
+    return {"fee_rate": service.FEE_RATE, "shipping": service.SHIPPING,
+            "count": len(rows), "rows": rows[:100]}
+
+
 @app.get("/api/updated")
 def api_updated():
     """データの最終取得時刻（キャッシュ内 _fetched_at の最新）を返す。
