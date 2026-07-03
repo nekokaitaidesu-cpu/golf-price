@@ -4,7 +4,7 @@
 
 ## 仕組み
 - `.github/workflows/refresh.yml` が**1日8回(2/10/12/14/16/18/20/22時 JST)**に起動
-- 全機種を取得（中古＝**楽天公式API**／フリマ＝Yahoo落札／一部ゴルフパートナー）
+- 全機種を取得（中古＝**楽天公式API**／フリマ＝**メルカリ検索API**（障害時Yahoo落札に退避）／一部ゴルフパートナー）
 - スマホ用サイトを生成し **`golf-price-mobile`** へ自動push（デプロイキー使用）
   → https://nekokaitaidesu-cpu.github.io/golf-price-mobile/
 - **前日比の基準は「2:00の回だけ」記録**（`--record-history`）。10:00〜22:00の回は価格・サイトを

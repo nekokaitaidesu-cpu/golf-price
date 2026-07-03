@@ -196,7 +196,7 @@ def api_search(
     pages: int = Query(2, ge=1, le=5),
     refresh: bool = Query(False),
 ):
-    """検索して①中古平均・②最安値・③フリマ実売平均を集計して返す。"""
+    """検索して①中古平均・②最安値・③メルカリ平均を集計して返す。"""
     if model not in CATALOG_BY_KEY and model not in MODELS and model not in registry.load():
         return JSONResponse({"error": f"unknown model: {model}"}, status_code=400)
 

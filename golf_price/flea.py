@@ -1,13 +1,15 @@
-"""フリマ実売（Yahoo落札相場）の取得＋機種一致フィルタ。
+"""フリマ実売（メルカリ売り切れ）の取得＋機種一致フィルタ。
 
 検索キーワードでは別機種・部品・スパムが混ざるため、
 圧縮キー照合・ブランド一致・部品ノイズ除去・最低価格で本体のみに絞る。
+メルカリは新着順で取得するため、返る出品は「最近売れた順」＝新鮮な相場。
+メルカリが応答しない時だけYahoo落札相場に退避する。
 """
 
 import re
 import unicodedata
 
-from .scrapers import yahoo_auction
+from .scrapers import mercari, yahoo_auction
 from .scrapers.base import Listing
 from .normalize import compact, is_parts_junk
 
@@ -16,6 +18,7 @@ def params_from_label(label: str) -> tuple[str, str, list[str]]:
     """モデル名ラベルから (検索KW, 必須圧縮キー, ブランド圧縮キー群) を導出。"""
     t = unicodedata.normalize("NFKC", label or "")
     t = re.sub(r"\d{1,2}(?:\.\d)?\s*[°度]", "", t)  # ロフト除去
+    t = t.replace("◆", " ")  # グレード記号（◆◆◆MAX等）は出品タイトルに現れない
     toks = [w for w in t.split() if w]
     brand = toks[0] if toks else ""
     model_core = " ".join(toks[1:]).strip()
@@ -25,8 +28,11 @@ def params_from_label(label: str) -> tuple[str, str, list[str]]:
 
 def collect(keyword: str, required_compact: str, brand_compacts: list[str],
             min_price: int = 3000, pages: int = 2) -> list[Listing]:
-    """落札相場から、当該機種の本体出品（実売）だけを返す。"""
-    raw = yahoo_auction.search_closed(keyword, pages=pages)
+    """メルカリ売り切れ（新着順）から、当該機種の本体出品（実売）だけを返す。"""
+    try:
+        raw = mercari.search_closed(keyword, price_min=min_price)
+    except mercari.MercariError:
+        raw = yahoo_auction.search_closed(keyword, pages=pages)
     out: list[Listing] = []
     for l in raw:
         if l.price < min_price:

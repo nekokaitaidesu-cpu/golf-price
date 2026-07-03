@@ -18,8 +18,8 @@ def normalize(text: str) -> str:
         return " "
     t = unicodedata.normalize("NFKC", text)
     t = t.lower()
-    # 記号類を空白に（◆ は判定に使うので残す）
-    t = re.sub(r"[【】\[\]（）()｜|/／,，･・’'\"”“]", " ", t)
+    # 記号類を空白に（◆ は判定に使うので残す。〜はアイアン番手レンジに使うので残す）
+    t = re.sub(r"[【】\[\]（）()｜|/／,，･・’'\"”“★☆●○◎■□‼]", " ", t)
     t = re.sub(r"\s+", " ", t)
     return f" {t.strip()} "
 
@@ -56,8 +56,12 @@ def classify_grade(norm_title: str, spec: ModelSpec) -> Grade:
     return spec.grades[-1]
 
 
-# シャフト有無の判定
-_HEAD_ONLY_PAT = re.compile(r"ヘッドのみ|ヘッド単体|ヘッドだけ|head only|ヘッドのみ販売|ヘッド\s*のみ")
+# シャフト有無の判定。メルカリは「〜ドライバー ヘッド」のように
+# 「のみ」を書かないヘッド単体出品が多いため、タイトル末尾の「ヘッド」や
+# 「ヘッド＋付属品」も拾う（「ヘッドカバー」「ヘッドに傷」等は拾わない）。
+_HEAD_ONLY_PAT = re.compile(
+    r"ヘッドのみ|ヘッド単体|ヘッド単品|ヘッドだけ|head only|ヘッド\s*のみ"
+    r"|ヘッド\s*[+＋]|ヘッド\s*$")
 
 
 def detect_head_only(norm_title: str) -> bool:

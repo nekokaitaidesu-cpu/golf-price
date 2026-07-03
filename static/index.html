@@ -135,7 +135,7 @@
 <body>
 <header>
   <h1>⛳ ゴルフクラブ中古価格調査</h1>
-  <div class="sub">サイト横断でモデル名を名寄せし、グレード別に ①中古平均 ②最安値 ③フリマ実売平均 を集計</div>
+  <div class="sub">サイト横断でモデル名を名寄せし、グレード別に ①中古平均 ②最安値 ③メルカリ実売平均 を集計</div>
   <div class="sub" id="updated" style="margin-top:5px"></div>
 </header>
 <div class="wrap">
@@ -211,16 +211,16 @@ function metric(label, val, cls){
     <div class="val ${na?'na':''}">${na?'データなし':yen(val)}</div></div>`;
 }
 
-// 試算バナー: 中古最安×0.9 − 送料 − フリマ実売平均（このアプリの主役）
+// 試算バナー: 中古最安×0.9 − 送料 − メルカリ平均（このアプリの主役）
 function gapBanner(b){
   const g = b.gap;
   if(!g){
-    return `<div class="gap none"><span class="note2">中古ショップ／フリマ実売データが不足のため試算できません（落札相場に該当が少ない）。</span></div>`;
+    return `<div class="gap none"><span class="note2">中古ショップ／メルカリ実売データが不足のため試算できません（メルカリに該当が少ない）。</span></div>`;
   }
   const feePct = Math.round(g.fee_rate*100);
   const profit = g.profit, win = profit >= 0;
   const med = g.basis === "median";
-  const fLabel = med ? "フリマ中央値" : "フリマ実売平均";
+  const fLabel = med ? "メルカリ中央値" : "メルカリ平均";
   const uLabel = med ? "中古中央値" : "中古最安";
   return `<div class="gap ${win?'profit':'loss'}">
     <div class="formula">
@@ -255,7 +255,7 @@ function listTable(samples, title, sold){
 function sampleSections(b){
   return `<div class="lists">`
     + listTable(b.used_samples, "🏬 中古ショップ出品（買うとき）", false)
-    + listTable(b.flea_samples, "🏷️ フリマ実売（売れた価格）", true)
+    + listTable(b.flea_samples, "🏷️ メルカリ実売（売り切れ最新＋販売中最安）", true)
     + `</div>`;
 }
 
@@ -281,7 +281,7 @@ function showLoft(i){
     <div class="metrics">
       ${metric("①中古 平均", u.avg, "avg")}
       ${metric("②最安値", u.min, "min")}
-      ${metric("③フリマ実売", f.avg, "flea")}
+      ${metric("③メルカリ実売", f.avg, "flea")}
     </div>
     ${gapBanner(b)}
     <div class="gfoot">
@@ -300,7 +300,7 @@ function renderSingle(d){
     <div class="metrics">
       ${metric("①中古 平均", u.avg, "avg")}
       ${metric("②最安値", u.min, "min")}
-      ${metric("③フリマ実売", f.avg, "flea")}
+      ${metric("③メルカリ実売", f.avg, "flea")}
     </div>
     ${gapBanner(d)}
     <div class="gfoot"><span>中古 中央値 ${yen(u.median)} ／ 最高 ${yen(u.max)}</span></div>
@@ -353,7 +353,7 @@ async function runRanking(cat, refresh=false){
        <th class="sortable" data-key="brand">機種 <span class="ind"></span></th>
        <th class="sortable" data-key="used_min">中古最安 <span class="ind"></span></th>
        <th class="sortable" data-key="prev_pct">前日比 <span class="ind"></span></th>
-       <th class="sortable" data-key="flea_avg">フリマ平均 <span class="ind"></span></th>
+       <th class="sortable" data-key="flea_avg">メルカリ平均 <span class="ind"></span></th>
        <th class="sortable" data-key="dig_pct" title="最安が2番目に安い出品より何％安いか。大きいほど1個だけ突出して安い＝掘り出し物">掘り出し <span class="ind"></span></th>
      </tr></thead><tbody id="rankbody"></tbody></table>`;
   $("#rankback").onclick = loadRanking;
@@ -521,7 +521,7 @@ function gradeCard(g){
     <div class="metrics">
       ${metric("①中古 平均", u.avg, "avg")}
       ${metric("②最安値", u.min, "min")}
-      ${metric("③フリマ実売", f.avg, "flea")}
+      ${metric("③メルカリ実売", f.avg, "flea")}
     </div>
     ${gapBanner(g)}
     <div class="gfoot">
@@ -558,7 +558,7 @@ async function search(refresh=false){
     $("#meta").textContent = `${d.model_label}／全${d.total_listings}件`
         + (d._cached ? "（キャッシュ）" : ` （取得 ${d._fetched_at||""}）`);
     $("#note").innerHTML =
-      `※ ①②中古価格＝中古ショップ（ゴルフパートナー/楽天）の出品。③フリマ実売＝Yahoo!オークション落札相場＋Yahoo!フリマの「実際に売れた価格」。<br>`
+      `※ ①②中古価格＝中古ショップ（ゴルフパートナー/楽天）の出品。③メルカリ実売＝メルカリの「売り切れ 最新5件」＋「販売中の最安2件」（実際に売れた価格中心の新鮮な相場）。<br>`
       + `※「差額」は中古ショップで買ってフリマで売った場合の目減り目安（ヘッドのみ等も含む概算）。価格は取得時点のもの。個人利用・低頻度アクセス前提で取得しています。`;
   }catch(e){
     $("#status").innerHTML = `<span class="err">通信エラー: ${e}</span>`;

@@ -154,7 +154,7 @@ function viewHome(){
   $("#app").innerHTML = searchBar("") + `<div class="catgrid">` + DATA.categories.map(c=>
     `<button class="catbtn" onclick="go('c=${c.key}')">${c.label}<span class="c">${c.count}機種</span></button>`
   ).join("") + `</div>
-    <div class="foot">中古最安で仕入れ→フリマ実売平均で売却の試算損益。<br>
+    <div class="foot">中古最安で仕入れ→メルカリ平均で売却の試算損益。<br>
     手数料${Math.round(DATA.fee_rate*100)}%・送料${yen(DATA.shipping)}込み。タップで機種→ショップへ。</div>`;
 }
 
@@ -203,11 +203,11 @@ function viewModel(key){
   const u=m.used, f=m.flea, p=m.profit;
   const win = (p!=null && p>=0);
   const med = m.gap_basis === "median";
-  const fLabel = med ? "フリマ中央値" : "フリマ実売平均";
+  const fLabel = med ? "メルカリ中央値" : "メルカリ平均";
   const uLabel = med ? "中古中央値" : "中古最安";
   const gUsed = (m.gap_used!=null) ? m.gap_used : u.min;
   const gFlea = (m.gap_flea!=null) ? m.gap_flea : f.avg;
-  const gap = (p==null) ? `<div class="gap"><div class="f">フリマ実売データ不足のため試算できません。</div></div>` :
+  const gap = (p==null) ? `<div class="gap"><div class="f">メルカリ実売データ不足のため試算できません。</div></div>` :
     `<div class="gap ${win?'win':'loss'}">
        <div class="f">${fLabel} ${yen(gFlea)} ×${(1-DATA.fee_rate).toFixed(2)} − 送料${yen(DATA.shipping)} − ${uLabel} ${yen(gUsed)}${med?'（アイアンは中央値で試算）':''}</div>
        <div class="big">${win?'＋':'−'}${yen(Math.abs(p))}</div>
@@ -224,12 +224,12 @@ function viewModel(key){
     <div class="metrics">
       <div class="m avg"><div class="l">①中古 平均</div><div class="v">${yen(u.avg)}</div></div>
       <div class="m min"><div class="l">②最安値</div><div class="v">${yen(u.min)}</div></div>
-      <div class="m"><div class="l">③フリマ実売</div><div class="v">${yen(f.avg)}</div></div>
+      <div class="m"><div class="l">③メルカリ実売</div><div class="v">${yen(f.avg)}</div></div>
     </div>
     ${gap}
     <div class="sechead">🏬 中古ショップ出品（安い順・タップで購入ページ）</div>
     ${used.length ? used.map(s=>shopRow(s,false)).join("") : `<div class="empty">該当なし</div>`}
-    <div class="sechead">🏷️ フリマ実売（売れた価格）</div>
+    <div class="sechead">🏷️ メルカリ実売（売り切れ最新＋販売中最安）</div>
     ${flea.length ? flea.map(s=>shopRow(s,true)).join("") : `<div class="empty">該当なし</div>`}
     <div class="foot">価格は ${DATA.generated_at} 時点。出品リンクは在庫切れの場合があります。</div>`;
   window.scrollTo(0,0);

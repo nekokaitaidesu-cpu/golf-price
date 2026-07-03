@@ -42,7 +42,7 @@ jobs:
         with:
           python-version: "3.12"
 
-      - run: pip install requests beautifulsoup4
+      - run: pip install requests beautifulsoup4 cryptography
 
       - name: restore history.db (前日比の基準)
         run: |

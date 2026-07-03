@@ -8,7 +8,7 @@ from concurrent.futures import ThreadPoolExecutor
 from .spec import MODELS, DEFAULT_MODEL_KEY, ModelSpec
 from .normalize import (analyze, normalize, detect_head_only, is_parts_junk,
                         compact, extract_loft, looks_like_iron_set)
-from .scrapers import rakuten, golfpartner, yahoo_auction
+from .scrapers import rakuten, golfpartner, yahoo_auction, mercari
 from .scrapers.base import Listing
 from . import flea
 from .catalog import DriverModel, CATALOG, CATALOG_BY_KEY
@@ -16,6 +16,10 @@ from .catalog import DriverModel, CATALOG, CATALOG_BY_KEY
 # ドライバー本体としてあり得ない安値（部品等）を弾く下限
 MIN_FLEA_PRICE = 3000
 MIN_USED_PRICE = 5000
+
+# ③メルカリ平均の採用件数（新鮮な相場にするため件数を絞る）
+MERCARI_SOLD_RECENT = 5   # 売り切れ: 新着順の最新N件
+MERCARI_ACTIVE_MIN = 2    # 販売中: 最安N件（現在の売値の下限）
 
 # 試算パラメータ（フリマ手数料・送料）
 FEE_RATE = 0.10      # フリマ手数料10%（中古最安に対して ×0.9）
@@ -88,9 +92,14 @@ def collect_listings(spec: ModelSpec, pages: int = 2) -> list[Listing]:
             lst.head_only = detect_head_only(normalize(lst.title))
             matched.append(lst)
 
-    # --- フリマ実売（Yahoo落札相場）: キーワード検索→名寄せ＆ノイズ除去 ---
+    # --- フリマ実売（メルカリ売り切れ・新着順）: キーワード検索→名寄せ＆ノイズ除去 ---
     for kw in _build_keywords(spec):
-        for lst in yahoo_auction.search_closed(kw.replace(" 中古", ""), pages=2):
+        try:
+            closed = mercari.search_closed(kw.replace(" 中古", ""),
+                                           price_min=MIN_FLEA_PRICE)
+        except mercari.MercariError:
+            closed = yahoo_auction.search_closed(kw.replace(" 中古", ""), pages=2)
+        for lst in closed:
             if lst.price < MIN_FLEA_PRICE or is_parts_junk(lst.title):
                 continue
             key = (lst.source, lst.url, lst.price)
@@ -205,7 +214,7 @@ def _run_user_model(entry: dict, pages: int) -> dict:
     for l in listings:
         l.head_only = detect_head_only(normalize(l.title))
 
-    # フリマ実売（Yahoo落札相場）をラベルから検索して取り込み
+    # フリマ実売（メルカリ売り切れ）をラベルから検索して取り込み
     kw, req, brands = flea.params_from_label(entry["label"])
     sold_listings = flea.collect(kw, req, brands, min_price=MIN_FLEA_PRICE, pages=2)
     for l in sold_listings:
@@ -411,11 +420,11 @@ def _drop_low_outliers(items: list[Listing], frac: float = 0.35) -> list[Listing
 
 
 def run_catalog_model(m: DriverModel, pages: int = 2) -> dict:
-    """カタログ機種（キーワード方式）を 中古=楽天 / フリマ=Yahoo で集計。"""
+    """カタログ機種（キーワード方式）を 中古=楽天 / フリマ=メルカリ で集計。"""
     # チッパーは安価なので下限を下げる
     min_u = 2500 if m.category == "chipper" else MIN_USED_PRICE
     min_f = 1500 if m.category == "chipper" else MIN_FLEA_PRICE
-    # 高速化: 各サイト1ページ＋楽天(中古)とYahoo(フリマ)を並列取得（別サイトなので安全）
+    # 高速化: 楽天(中古)とメルカリ(フリマ)を並列取得（別サイトなので安全）
     def _fetch_used():
         out = []
         for l in rakuten.search(m.keyword + " 中古", pages=1):
@@ -425,13 +434,29 @@ def run_catalog_model(m: DriverModel, pages: int = 2) -> dict:
                 out.append(l)
         return out
 
+    def _flea_ok(l):
+        # 採用5+2件と少数なので、ヘッドのみ出品も除外（完品の売値相場に揃える）
+        return (l.price >= min_f and not is_parts_junk(l.title)
+                and not detect_head_only(normalize(l.title))
+                and _catalog_match(l.title, m))
+
     def _fetch_sold():
-        out = []
-        for l in yahoo_auction.search_closed(m.keyword, pages=1, per=50):
-            if (l.price >= min_f and not is_parts_junk(l.title)
-                    and _catalog_match(l.title, m)):
-                out.append(l)
-        return out
+        """③メルカリ平均: 売り切れ最新5件＋販売中の最安2件（新鮮な実売相場）。"""
+        try:
+            sold_raw = mercari.search_closed(m.keyword, price_min=min_f)
+            sold = [l for l in sold_raw if _flea_ok(l)][:MERCARI_SOLD_RECENT]  # 新着順
+            # 販売中は「直近実売の中央値×0.45」を下限にして部品/カバー帯を飛ばす
+            floor = min_f
+            if sold:
+                floor = max(min_f, round(statistics.median(
+                    [l.price for l in sold]) * 0.45))
+            active_raw = mercari.search_active(m.keyword, price_min=floor)
+        except mercari.MercariError:
+            # メルカリが応答しない時だけYahoo落札相場に退避
+            return [l for l in yahoo_auction.search_closed(m.keyword, pages=1, per=50)
+                    if _flea_ok(l)]
+        active = [l for l in active_raw if _flea_ok(l)]                    # 価格昇順
+        return sold + active[:MERCARI_ACTIVE_MIN]
 
     with ThreadPoolExecutor(max_workers=2) as ex:
         fu, fs = ex.submit(_fetch_used), ex.submit(_fetch_sold)
