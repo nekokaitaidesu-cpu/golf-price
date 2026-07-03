@@ -20,6 +20,9 @@ MIN_USED_PRICE = 5000
 # ③メルカリ平均の採用件数（新鮮な相場にするため件数を絞る）
 MERCARI_SOLD_RECENT = 5   # 売り切れ: 新着順の最新N件
 MERCARI_ACTIVE_MIN = 2    # 販売中: 最安N件（現在の売値の下限）
+# 上記プール(5+2)のうち安い方N件だけを平均に採用。
+# 高値の売切が平均を押し上げ「実際に売れる金額より高め」になるのを防ぐ。
+MERCARI_AVG_TAKE = 3
 
 # 試算パラメータ（フリマ手数料・送料）
 FEE_RATE = 0.10      # フリマ手数料10%（中古最安に対して ×0.9）
@@ -456,7 +459,12 @@ def run_catalog_model(m: DriverModel, pages: int = 2) -> dict:
             return [l for l in yahoo_auction.search_closed(m.keyword, pages=1, per=50)
                     if _flea_ok(l)]
         active = [l for l in active_raw if _flea_ok(l)]                    # 価格昇順
-        return sold + active[:MERCARI_ACTIVE_MIN]
+        # プール(売切最新5＋販売中最安2)から安い方3件だけを平均に使う。
+        # 安値側を採るためフィルタをすり抜けた部品（シャフト等）が刺さりやすく、
+        # 先にプール中央値×0.5未満の極端な安値を落としてから選抜する。
+        pool = _drop_low_outliers(sold + active[:MERCARI_ACTIVE_MIN], frac=0.5)
+        pool.sort(key=lambda l: l.price)
+        return pool[:MERCARI_AVG_TAKE]
 
     with ThreadPoolExecutor(max_workers=2) as ex:
         fu, fs = ex.submit(_fetch_used), ex.submit(_fetch_sold)

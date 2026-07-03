@@ -232,7 +232,7 @@ function viewModel(key){
     ${gap}
     <div class="sechead">🏬 中古ショップ出品（安い順・タップで購入ページ）</div>
     ${used.length ? used.map(s=>shopRow(s,false)).join("") : `<div class="empty">該当なし</div>`}
-    <div class="sechead">🏷️ メルカリ実売（売り切れ最新＋販売中最安）</div>
+    <div class="sechead">🏷️ メルカリ実売（平均に使った安値側3件）</div>
     ${flea.length ? flea.map(s=>shopRow(s,true)).join("") : `<div class="empty">該当なし</div>`}
     <div class="foot">価格は ${DATA.generated_at} 時点。出品リンクは在庫切れの場合があります。</div>`;
   window.scrollTo(0,0);

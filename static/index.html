@@ -257,7 +257,7 @@ function listTable(samples, title, sold){
 function sampleSections(b){
   return `<div class="lists">`
     + listTable(b.used_samples, "🏬 中古ショップ出品（買うとき）", false)
-    + listTable(b.flea_samples, "🏷️ メルカリ実売（売り切れ最新＋販売中最安）", true)
+    + listTable(b.flea_samples, "🏷️ メルカリ実売（平均に使った安値側3件）", true)
     + `</div>`;
 }
 
@@ -565,7 +565,7 @@ async function search(refresh=false){
     $("#meta").textContent = `${d.model_label}／全${d.total_listings}件`
         + (d._cached ? "（キャッシュ）" : ` （取得 ${d._fetched_at||""}）`);
     $("#note").innerHTML =
-      `※ ①②中古価格＝中古ショップ（ゴルフパートナー/楽天）の出品。③メルカリ実売＝メルカリの「売り切れ 最新5件」＋「販売中の最安2件」（実際に売れた価格中心の新鮮な相場）。<br>`
+      `※ ①②中古価格＝中古ショップ（ゴルフパートナー/楽天）の出品。③メルカリ実売＝メルカリの「売り切れ最新5件＋販売中最安2件」のうち安い3件の平均（高値の売切に引っ張られない、実際に売れる寄りの相場）。<br>`
       + `※「差額」は中古ショップで買ってフリマで売った場合の目減り目安（ヘッドのみ等も含む概算）。価格は取得時点のもの。個人利用・低頻度アクセス前提で取得しています。`;
   }catch(e){
     $("#status").innerHTML = `<span class="err">通信エラー: ${e}</span>`;
