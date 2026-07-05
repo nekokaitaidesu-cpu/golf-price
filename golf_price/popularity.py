@@ -56,22 +56,27 @@ def _pick(raws: list[dict], m: DriverModel, min_price: int, since: float) -> lis
     return out
 
 
-def _flag(sold: int, active: int, sell_rate, days_median) -> str:
+def _flag(sold: int, active: int, sell_rate, days_median,
+          window_days: int = 30) -> str:
     """需給の状態バッジ。
     hot   = 即売れ（よく売れ、出てもすぐ消える）
     glut  = 販売中過多（供給>需要。在庫がだぶついている）
     scarce= 品薄（売れるのに玉がない）
+    短い窓（直近7日等）は件数の絶対数が小さくなるため閾値を緩める。
     """
-    if sold >= 5 and (sell_rate or 0) >= 0.6 and days_median is not None and days_median <= 4:
+    short = window_days < 30
+    if (sold >= (3 if short else 5) and (sell_rate or 0) >= 0.6
+            and days_median is not None and days_median <= 4):
         return "hot"
-    if active >= 8 and sell_rate is not None and sell_rate <= 0.3:
+    if active >= (4 if short else 8) and sell_rate is not None and sell_rate <= 0.3:
         return "glut"
-    if sold >= 4 and active <= 2:
+    if sold >= (2 if short else 4) and active <= (1 if short else 2):
         return "scarce"
     return ""
 
 
-def _aggregate(sold: list[dict], active: list[dict], truncated: bool) -> dict:
+def _aggregate(sold: list[dict], active: list[dict], truncated: bool,
+               window_days: int = 30) -> dict:
     """抜き出し済みの出品リストから1窓ぶんの指標を計算する。"""
     total = len(sold) + len(active)
     sell_rate = round(len(sold) / total, 3) if total else None
@@ -91,7 +96,7 @@ def _aggregate(sold: list[dict], active: list[dict], truncated: bool) -> dict:
         "sold_price_median": sold_price_median,  # 実売価格の中央値（完品のみ）
         "active_min": active_min,             # 販売中の最安値
         "truncated": truncated,               # ページ上限打ち切り=件数は下限
-        "flag": _flag(len(sold), len(active), sell_rate, days_median),
+        "flag": _flag(len(sold), len(active), sell_rate, days_median, window_days),
         "sold_samples": [
             {"title": s["title"], "price": s["price"],
              "url": ITEM_URL.format(id=s["id"]),
@@ -142,7 +147,8 @@ def analyze_model(m: DriverModel, window_days: int = 30,
         "category": m.category,
         "window_days": window_days,
     }
-    row.update(_aggregate(sold, active, bool(sold_trunc or active_trunc)))
+    row.update(_aggregate(sold, active, bool(sold_trunc or active_trunc),
+                          window_days))
     for w in sub_windows:
         if w >= window_days:
             continue
@@ -151,5 +157,5 @@ def analyze_model(m: DriverModel, window_days: int = 30,
                    or _window_truncated(active_raw, active_trunc, since_w))
         row[f"w{w}"] = _aggregate(
             [x for x in sold if x["created"] >= since_w],
-            [x for x in active if x["created"] >= since_w], trunc_w)
+            [x for x in active if x["created"] >= since_w], trunc_w, w)
     return row
