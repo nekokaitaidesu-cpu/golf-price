@@ -1628,6 +1628,16 @@ CATALOG: list[DriverModel] = [
     DriverModel("ch_kasco_dfw225", "キャスコ", "ドルフィンウェッジ DFW-225", "2025",
                 "キャスコ ドルフィンウェッジ DFW-225", ["dfw225"], [],
                 category="chipper", club="ウェッジ|wedge|ドルフィン|dolphin"),
+    # キャスコ ドルフィンウェッジ 119シリーズ 2019（225の旧モデル）
+    DriverModel("ch_kasco_dpw119", "キャスコ", "ドルフィンウェッジ DPW-119", "2019",
+                "キャスコ ドルフィンウェッジ DPW-119", ["dpw119"], [],
+                category="chipper", club="ウェッジ|wedge|ドルフィン|dolphin"),
+    DriverModel("ch_kasco_drw119", "キャスコ", "ドルフィンウェッジ DRW-119", "2019",
+                "キャスコ ドルフィンウェッジ DRW-119", ["drw119"], [],
+                category="chipper", club="ウェッジ|wedge|ドルフィン|dolphin"),
+    DriverModel("ch_kasco_dfw119", "キャスコ", "ドルフィンウェッジ DFW-119", "2019",
+                "キャスコ ドルフィンウェッジ DFW-119", ["dfw119"], [],
+                category="chipper", club="ウェッジ|wedge|ドルフィン|dolphin"),
 
     # ============================================================
     # 2025-2026 現行モデル（2026-07 追加。ラフなyt_*キーを正規エントリに置換）
