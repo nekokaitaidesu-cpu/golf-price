@@ -58,8 +58,10 @@ def main():
                 break
             continue
         rows.append(row)
+        w7 = row.get("w7") or {}
         print(f"[{i}/{len(targets)}] {m.key}: 売れた{row['sold']} 販売中{row['active']}"
               f"{'+' if row['truncated'] else ''} "
+              f"(7日: {w7.get('sold', '—')}) "
               f"{'★' + row['flag'] if row['flag'] else ''}")
 
     if not rows:
@@ -70,6 +72,7 @@ def main():
     data = {
         "generated_at": time.strftime("%Y-%m-%d %H:%M"),
         "window_days": args.window,
+        "windows": [args.window] + [w for w in (7,) if w < args.window],
         "model_count": len(rows),
         "errors": errors,
         "rows": rows,

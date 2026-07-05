@@ -71,9 +71,55 @@ def _flag(sold: int, active: int, sell_rate, days_median) -> str:
     return ""
 
 
+def _aggregate(sold: list[dict], active: list[dict], truncated: bool) -> dict:
+    """抜き出し済みの出品リストから1窓ぶんの指標を計算する。"""
+    total = len(sold) + len(active)
+    sell_rate = round(len(sold) / total, 3) if total else None
+    days = [max(0.0, (x["updated"] - x["created"]) / 86400) for x in sold]
+    days_median = round(statistics.median(days), 1) if days else None
+    full_sold = [x["price"] for x in sold if not x["head_only"]]
+    sold_price_median = round(statistics.median(full_sold)) if full_sold else None
+    active_min = min((x["price"] for x in active), default=None)
+    # 直近に売れた順のサンプル（ページで「何がいくらで売れたか」を見せる用）
+    samples = sorted(sold, key=lambda x: -x["updated"])[:5]
+    return {
+        "sold": len(sold),                    # 期間内に出品→売れた数
+        "active": len(active),                # 期間内に出品→まだ販売中
+        "listed": total,                      # 期間内の出品総数（流通量・注目度）
+        "sell_rate": sell_rate,               # 売り切れ率 0〜1
+        "days_median": days_median,           # 売れるまでの日数（中央値）
+        "sold_price_median": sold_price_median,  # 実売価格の中央値（完品のみ）
+        "active_min": active_min,             # 販売中の最安値
+        "truncated": truncated,               # ページ上限打ち切り=件数は下限
+        "flag": _flag(len(sold), len(active), sell_rate, days_median),
+        "sold_samples": [
+            {"title": s["title"], "price": s["price"],
+             "url": ITEM_URL.format(id=s["id"]),
+             "days": round((s["updated"] - s["created"]) / 86400, 1),
+             "sold_at": time.strftime("%m/%d", time.localtime(s["updated"]))}
+            for s in samples
+        ],
+    }
+
+
+def _window_truncated(raws: list[dict], trunc: bool, since_w: float) -> bool:
+    """ページ上限で打ち切られていても、取れた範囲が since_w まで届いていれば
+    その窓（例: 直近7日）については全件取得できている。"""
+    if not trunc:
+        return False
+    oldest = min((int(r.get("created") or 0) for r in raws), default=0)
+    return oldest > since_w
+
+
 def analyze_model(m: DriverModel, window_days: int = 30,
-                  max_pages: int = MAX_PAGES) -> dict:
-    """1機種ぶんの人気指標を集計する。メルカリ疎通失敗は MercariError が上がる。"""
+                  max_pages: int = MAX_PAGES,
+                  sub_windows: tuple[int, ...] = (7,)) -> dict:
+    """1機種ぶんの人気指標を集計する。メルカリ疎通失敗は MercariError が上がる。
+
+    取得は window_days（最大窓）ぶんの1回だけ。sub_windows の短い窓
+    （例: 直近7日）は同じデータから切り出して追加コストゼロで同時集計し、
+    行の "w7" などに入れる。
+    """
     now = time.time()
     since = now - window_days * 86400
     min_price = MIN_PRICE_CHIPPER if m.category == "chipper" else MIN_PRICE
@@ -88,38 +134,22 @@ def analyze_model(m: DriverModel, window_days: int = 30,
     sold = _pick(sold_raw, m, min_price, since)
     active = _pick(active_raw, m, min_price, since)
 
-    total = len(sold) + len(active)
-    sell_rate = round(len(sold) / total, 3) if total else None
-    days = [max(0.0, (x["updated"] - x["created"]) / 86400) for x in sold]
-    days_median = round(statistics.median(days), 1) if days else None
-    full_sold = [x["price"] for x in sold if not x["head_only"]]
-    sold_price_median = round(statistics.median(full_sold)) if full_sold else None
-    active_min = min((x["price"] for x in active), default=None)
-
-    # 直近に売れた順のサンプル（ページで「何がいくらで売れたか」を見せる用）
-    samples = sorted(sold, key=lambda x: -x["updated"])[:5]
-
-    return {
+    row = {
         "key": m.key,
         "label": f"{m.brand} {m.label}",
         "brand": m.brand,
         "year": m.year,
         "category": m.category,
         "window_days": window_days,
-        "sold": len(sold),                    # 期間内に出品→売れた数
-        "active": len(active),                # 期間内に出品→まだ販売中
-        "listed": total,                      # 期間内の出品総数（流通量・注目度）
-        "sell_rate": sell_rate,               # 売り切れ率 0〜1
-        "days_median": days_median,           # 売れるまでの日数（中央値）
-        "sold_price_median": sold_price_median,  # 実売価格の中央値（完品のみ）
-        "active_min": active_min,             # 販売中の最安値
-        "truncated": bool(sold_trunc or active_trunc),  # ページ上限打ち切り=件数は下限
-        "flag": _flag(len(sold), len(active), sell_rate, days_median),
-        "sold_samples": [
-            {"title": s["title"], "price": s["price"],
-             "url": ITEM_URL.format(id=s["id"]),
-             "days": round((s["updated"] - s["created"]) / 86400, 1),
-             "sold_at": time.strftime("%m/%d", time.localtime(s["updated"]))}
-            for s in samples
-        ],
     }
+    row.update(_aggregate(sold, active, bool(sold_trunc or active_trunc)))
+    for w in sub_windows:
+        if w >= window_days:
+            continue
+        since_w = now - w * 86400
+        trunc_w = (_window_truncated(sold_raw, sold_trunc, since_w)
+                   or _window_truncated(active_raw, active_trunc, since_w))
+        row[f"w{w}"] = _aggregate(
+            [x for x in sold if x["created"] >= since_w],
+            [x for x in active if x["created"] >= since_w], trunc_w)
+    return row
