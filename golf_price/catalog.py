@@ -17,6 +17,8 @@ class DriverModel:
     required: list[str]                # 全て圧縮キーに含む必要
     excludes: list[str] = field(default_factory=list)  # 含んだら除外（兄弟分離）
     category: str = "driver"           # driver / fw / ut / iron
+    club: str = ""                     # カテゴリ標準の種別語に追加で認める語（"|"区切り）
+                                       # 例: チッパー部門のウェッジ型 → "ウェッジ|wedge"
 
 
 # カテゴリの表示名
@@ -1616,6 +1618,16 @@ CATALOG: list[DriverModel] = [
                 "リンクス チッパー", ["リンクス|lynx"], [], category="chipper"),
     DriverModel("ch_fourteen", "フォーティーン", "フォーティーン チッパー", "—",
                 "フォーティーン チッパー", ["フォーティーン|fourteen"], [], category="chipper"),
+    # キャスコ ドルフィンウェッジ 225シリーズ 2025（ウェッジ型だがチッパー部門で管理）
+    DriverModel("ch_kasco_dpw225", "キャスコ", "ドルフィンウェッジ DPW-225", "2025",
+                "キャスコ ドルフィンウェッジ DPW-225", ["dpw225"], [],
+                category="chipper", club="ウェッジ|wedge|ドルフィン|dolphin"),
+    DriverModel("ch_kasco_drw225", "キャスコ", "ドルフィンウェッジ DRW-225", "2025",
+                "キャスコ ドルフィンウェッジ DRW-225", ["drw225"], [],
+                category="chipper", club="ウェッジ|wedge|ドルフィン|dolphin"),
+    DriverModel("ch_kasco_dfw225", "キャスコ", "ドルフィンウェッジ DFW-225", "2025",
+                "キャスコ ドルフィンウェッジ DFW-225", ["dfw225"], [],
+                category="chipper", club="ウェッジ|wedge|ドルフィン|dolphin"),
 
     # ============================================================
     # 2025-2026 現行モデル（2026-07 追加。ラフなyt_*キーを正規エントリに置換）

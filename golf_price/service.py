@@ -385,8 +385,10 @@ def _catalog_match(title: str, m: DriverModel) -> bool:
     """
     c = compact(title)
     n = normalize(title)
-    # 当該カテゴリの種別語が必須
+    # 当該カテゴリの種別語が必須（機種側 club で追加の種別語を認められる）
     club = [compact(t) for t in CLUB_TOKENS.get(m.category, CLUB_TOKENS["driver"])]
+    if m.club:
+        club += [compact(t) for t in m.club.split("|")]
     if not any(t in c for t in club):
         return False
     # チッパーは「アイアン型/パター型チッパー」等の表記があるためクロス除外しない
