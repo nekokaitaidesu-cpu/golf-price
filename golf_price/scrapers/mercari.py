@@ -62,12 +62,14 @@ def _dpop(url: str, method: str = "POST") -> str:
     return signing_input + "." + _b64url(r.to_bytes(32, "big") + s.to_bytes(32, "big"))
 
 
-def _search_raw(keyword: str, status: str, sort: str, order: str,
-                price_min: int = 0, page_size: int = 120) -> list[dict]:
+def _search_page(keyword: str, status: str, sort: str, order: str,
+                 price_min: int = 0, page_size: int = 120,
+                 page_token: str = "") -> tuple[list[dict], str]:
+    """1ページ分を取得して (items, 次ページのpageToken) を返す。"""
     body = {
         "userId": "",
         "pageSize": page_size,
-        "pageToken": "",
+        "pageToken": page_token,
         "searchSessionId": uuid.uuid4().hex,
         "indexRouting": "INDEX_ROUTING_UNSPECIFIED",
         "thumbnailTypes": [],
@@ -114,17 +116,52 @@ def _search_raw(keyword: str, status: str, sort: str, order: str,
             continue
         if r.status_code == 200:
             try:
-                items = r.json().get("items", []) or []
+                data = r.json()
             except ValueError as e:
                 last = e
                 continue
             _FAIL_STREAK = 0
-            return items
+            items = data.get("items", []) or []
+            next_token = (data.get("meta") or {}).get("nextPageToken") or ""
+            return items, next_token
         last = RuntimeError(f"HTTP {r.status_code}")
         if r.status_code in (429, 403):
             time.sleep(3)
     _FAIL_STREAK += 1
     raise MercariError(f"メルカリ検索失敗: {last}")
+
+
+def _search_raw(keyword: str, status: str, sort: str, order: str,
+                price_min: int = 0, page_size: int = 120) -> list[dict]:
+    items, _ = _search_page(keyword, status, sort, order,
+                            price_min=price_min, page_size=page_size)
+    return items
+
+
+def search_recent_raw(keyword: str, status: str, price_min: int = 0,
+                      max_pages: int = 3,
+                      stop_before: float = 0.0) -> tuple[list[dict], bool]:
+    """出品日時(created)の新しい順にページを辿り、生のitem dictを返す（人気度集計用）。
+
+    stop_before: このepoch秒より古い created の出品に達したらそこで打ち切る。
+    返り値: (items, truncated)。truncated=True はページ上限で打ち切り＝
+    期間内の全件を取り切れていない（件数は下限値）ことを示す。
+    """
+    out: list[dict] = []
+    token = ""
+    for _ in range(max_pages):
+        items, token = _search_page(keyword, status,
+                                    "SORT_CREATED_TIME", "ORDER_DESC",
+                                    price_min=price_min, page_token=token)
+        if not items:
+            return out, False
+        out.extend(items)
+        oldest = min(int(i.get("created") or 0) for i in items)
+        if stop_before and oldest < stop_before:
+            return out, False        # 期間の端まで到達＝全件取得できた
+        if not token:
+            return out, False        # 検索結果の末尾＝全件取得できた
+    return out, True                 # ページ上限で打ち切り
 
 
 def _to_listing(raw: dict, sold: bool) -> Listing | None:

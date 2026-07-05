@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0f1720">
+<title>🏆 メルカリ人気ランキング</title>
+<style>
+  :root { --bg:#0f1720; --card:#18222e; --line:#27323f; --txt:#e7edf3; --muted:#8aa0b4;
+          --accent:#36b37e; --accent2:#4c9aff; --warn:#f5a623; --loss:#ff7a85; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { margin:0; background:var(--bg); color:var(--txt);
+         font-family:system-ui,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+         padding-bottom:env(safe-area-inset-bottom); }
+  header { position:sticky; top:0; z-index:10; background:rgba(15,23,32,.96); backdrop-filter:blur(8px);
+           border-bottom:1px solid var(--line); padding:12px 14px; padding-top:calc(12px + env(safe-area-inset-top)); }
+  header h1 { font-size:16px; margin:0; display:flex; align-items:center; gap:8px; }
+  .back { color:var(--accent2); font-size:14px; text-decoration:none; padding:6px 2px; }
+  .sub { color:var(--muted); font-size:11px; margin-top:2px; }
+  .wrap { padding:12px 12px 40px; max-width:680px; margin:0 auto; }
+
+  .cattabs { display:flex; gap:6px; overflow-x:auto; margin-bottom:10px; padding-bottom:2px; }
+  .cattabs button { flex:none; font-size:13px; padding:8px 12px; border-radius:999px;
+                    border:1px solid var(--line); background:var(--card); color:var(--muted); cursor:pointer; }
+  .cattabs button.on { border-color:var(--accent2); color:var(--accent2); }
+
+  .sortbar { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+  .sortbar button { flex:1 1 22%; font-size:12px; padding:9px 6px; border-radius:10px;
+                    border:1px solid var(--line); background:var(--card); color:var(--muted);
+                    cursor:pointer; white-space:nowrap; }
+  .sortbar button.on { border-color:var(--accent); color:var(--accent); }
+
+  .searchbar { display:flex; gap:8px; margin-bottom:10px; }
+  .searchbar input { flex:1; min-width:0; font-size:14px; padding:11px 12px; border-radius:10px;
+                     border:1px solid var(--line); background:var(--card); color:var(--txt); }
+
+  .tip { font-size:11px; color:var(--muted); line-height:1.7; margin:0 2px 12px; }
+
+  .row { background:var(--card); border:1px solid var(--line); border-radius:12px;
+         padding:12px; margin-bottom:8px; cursor:pointer; }
+  .row .top { display:flex; align-items:center; gap:10px; }
+  .row .rk { color:var(--muted); font-size:13px; width:26px; text-align:center; flex:none; font-weight:700; }
+  .row .rk.top3 { color:var(--warn); }
+  .row .mid { flex:1; min-width:0; }
+  .row .nm { font-size:15px; font-weight:600; }
+  .row .meta { font-size:11px; color:var(--muted); margin-top:3px; line-height:1.6; }
+  .row .pr { text-align:right; flex:none; }
+  .row .soldn { font-size:18px; font-weight:800; color:var(--accent); }
+  .row .soldn .u { font-size:10px; font-weight:400; color:var(--muted); }
+  .row .mn { font-size:11px; color:var(--muted); margin-top:2px; }
+  .badge { display:inline-block; font-size:10px; font-weight:700; padding:2px 7px; border-radius:999px;
+           margin-left:6px; vertical-align:2px; }
+  .badge.hot { background:#3a1d12; color:#ffb38a; border:1px solid #7a3b22; }
+  .badge.glut { background:#332310; color:var(--warn); border:1px solid #6b4a14; }
+  .badge.scarce { background:#12253a; color:var(--accent2); border:1px solid #234a7a; }
+  .rate.hi { color:var(--accent); font-weight:700; } .rate.lo { color:var(--loss); font-weight:700; }
+  .days.fast { color:var(--accent); font-weight:700; }
+
+  .hit { display:flex; gap:8px; align-items:center; background:#101a24; border:1px solid var(--line);
+         border-radius:8px; padding:8px 10px; margin-top:6px; text-decoration:none; color:var(--txt); }
+  .hit .hp { font-size:13px; font-weight:700; flex:none; color:var(--loss); }
+  .hit .ht { font-size:11px; color:var(--muted); flex:1; min-width:0; line-height:1.5; }
+  .hit .hd { color:var(--muted); flex:none; font-size:10px; text-align:right; line-height:1.5; }
+  .empty { color:var(--muted); font-size:12px; padding:16px 2px; text-align:center; }
+  .loading { color:var(--warn); padding:24px; text-align:center; }
+  .foot { color:var(--muted); font-size:11px; margin-top:24px; text-align:center; line-height:1.7; }
+</style>
+</head>
+<body>
+<header>
+  <h1><a class="back" href="./">←</a> 🏆 メルカリ人気ランキング</h1>
+  <div class="sub" id="sub">読み込み中…</div>
+</header>
+<div class="wrap">
+  <div class="cattabs" id="cattabs"></div>
+  <div class="sortbar" id="sortbar"></div>
+  <div class="searchbar"><input id="q" type="text" placeholder="🔎 機種名で絞り込み（例: qi10 / ゼクシオ / ping）"></div>
+  <div class="tip" id="tip"></div>
+  <div id="list"><div class="loading">読み込み中…</div></div>
+  <div class="foot" id="foot"></div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const yen = n => (n==null) ? "—" : "¥" + n.toLocaleString();
+const CATS = [["","すべて"],["driver","ドライバー"],["fw","FW"],["ut","UT"],["iron","アイアン"],["chipper","チッパー"]];
+const SORTS = [
+  ["sold",  "🏆 人気順",   (a,b)=> b.sold - a.sold || (b.sell_rate||0)-(a.sell_rate||0)],
+  ["days",  "⚡ 即売れ順", (a,b)=> (a.days_median==null)-(b.days_median==null)
+                             || a.days_median-b.days_median || b.sold-a.sold],
+  ["rate",  "📈 売切率順", (a,b)=> (b.sell_rate==null)-(a.sell_rate==null)
+                             || (b.sell_rate||0)-(a.sell_rate||0) || b.sold-a.sold],
+  ["glut",  "📦 在庫過多", (a,b)=> b.active - a.active || (a.sell_rate||1)-(b.sell_rate||1)],
+];
+const BADGE = { hot:'<span class="badge hot">🔥即売れ</span>',
+                glut:'<span class="badge glut">📦売れ残り多</span>',
+                scarce:'<span class="badge scarce">💎品薄</span>' };
+let DATA = null, cat = "", sort = "sold", q = "", open = new Set();
+
+async function loadData(){
+  // GitHub Pages: 同じ場所の popularity.json（分単位キーで常に最新）
+  try {
+    const r = await fetch("popularity.json?t=" + Math.floor(Date.now()/60000), {cache:"no-cache"});
+    if (r.ok) return await r.json();
+  } catch(e) {}
+  // PC版(FastAPI): APIから
+  const r2 = await fetch("/api/popularity");
+  if (!r2.ok) throw new Error((await r2.json()).error || "取得失敗");
+  return await r2.json();
+}
+
+function rowsFiltered(){
+  let rows = DATA.rows.slice();
+  if (cat) rows = rows.filter(r => r.category === cat);
+  if (q) {
+    const toks = q.toLowerCase().split(/\s+/).filter(Boolean);
+    rows = rows.filter(r => toks.every(t => (r.label + " " + r.key + " " + r.year).toLowerCase().includes(t)));
+  }
+  rows.sort(SORTS.find(s => s[0] === sort)[2]);
+  return rows;
+}
+
+function render(){
+  $("#cattabs").innerHTML = CATS.map(([k,l]) =>
+    `<button class="${cat===k?'on':''}" onclick="cat='${k}';render()">${l}</button>`).join("");
+  $("#sortbar").innerHTML = SORTS.map(([k,l]) =>
+    `<button class="${sort===k?'on':''}" onclick="sort='${k}';render()">${l}</button>`).join("");
+  const tips = {
+    sold: `<b>直近${DATA.window_days}日にメルカリへ出品されて実際に売れた本数</b>の多い順＝今いちばん動いている機種。`,
+    days: `出品から<b>売れるまでの日数（中央値）</b>が短い順＝出るとすぐ消える機種。`,
+    rate: `期間内出品のうち<b>売れた割合</b>が高い順。高い＝需要が供給を上回っている。`,
+    glut: `<b>販売中（まだ売れていない出品）</b>が多い順＝出品がだぶついて競合が多い機種。`,
+  };
+  $("#tip").innerHTML = tips[sort];
+  const rows = rowsFiltered();
+  if (!rows.length) { $("#list").innerHTML = `<div class="empty">該当なし</div>`; return; }
+  $("#list").innerHTML = rows.map((r,i) => {
+    const plus = r.truncated ? "+" : "";
+    const rate = r.sell_rate==null ? "—"
+      : `<span class="rate ${r.sell_rate>=0.6?'hi':(r.sell_rate<=0.3?'lo':'')}">${Math.round(r.sell_rate*100)}%</span>`;
+    const days = r.days_median==null ? "—"
+      : `<span class="days ${r.days_median<=3?'fast':''}">${r.days_median}日</span>`;
+    const samples = (open.has(r.key) && r.sold_samples.length)
+      ? r.sold_samples.map(s =>
+          `<a class="hit" href="${s.url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">
+             <span class="hp">${yen(s.price)}</span><span class="ht">${s.title}</span>
+             <span class="hd">${s.sold_at}売却<br>${s.days}日で完売</span></a>`).join("")
+      : "";
+    return `<div class="row" onclick="toggle('${r.key}')">
+      <div class="top">
+        <div class="rk ${i<3&&sort==='sold'?'top3':''}">${i+1}</div>
+        <div class="mid">
+          <div class="nm">${r.label}${BADGE[r.flag]||""}</div>
+          <div class="meta">${r.year} ・ 売切率 ${rate} ・ 売れるまで ${days} ・ 実売中央 ${yen(r.sold_price_median)}</div>
+        </div>
+        <div class="pr">
+          <div class="soldn">${r.sold}${plus}<span class="u">本売れた</span></div>
+          <div class="mn">販売中 ${r.active}${plus}件</div>
+        </div>
+      </div>${samples}</div>`;
+  }).join("");
+  $("#foot").textContent = `${rows.length}機種を表示 ／ 集計 ${DATA.generated_at}（直近${DATA.window_days}日・個人間フリマのみ、メルカリShops除外）`;
+}
+
+function toggle(key){ open.has(key) ? open.delete(key) : open.add(key); render(); }
+
+$("#q").addEventListener("input", e => { q = e.target.value.trim(); render(); });
+
+loadData().then(d => {
+  DATA = d;
+  $("#sub").textContent = `直近${d.window_days}日の実売データ ・ 集計 ${d.generated_at} ・ ${d.model_count}機種`;
+  render();
+}).catch(e => {
+  $("#list").innerHTML = `<div class="empty">データがまだありません。<br>PCで <code>python refresh_popularity.py</code> を実行するか、クラウドの自動集計（毎日3:30）をお待ちください。<br><span style="color:var(--loss)">${e.message||e}</span></div>`;
+  $("#sub").textContent = "未集計";
+});
+</script>
+</body>
+</html>

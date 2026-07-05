@@ -1,0 +1,96 @@
+name: popularity
+# 毎日3:30 JSTにメルカリ人気ランキング（直近30日の実売数・売切率・在庫）を全機種集計。
+# 結果は .cache/popularity.json → dataブランチで永続化（start.batでPCにも同期）＋
+# golf-price-mobile へ popularity.html / popularity.json を公開（スマホ閲覧用）。
+on:
+  schedule:
+    - cron: "30 18 * * *"    # 03:30 JST（2:00の価格取得が終わった後）
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: "テスト用: 先頭N機種だけ実行（空=全機種）"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+# refresh と同じグループ＝dataブランチへの同時pushを直列化して競合を防ぐ
+concurrency:
+  group: refresh
+  cancel-in-progress: false
+
+jobs:
+  popularity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      TZ: Asia/Tokyo
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install requests beautifulsoup4 cryptography
+
+      - name: restore data branch (.cache + history.db)
+        # 価格キャッシュと前日比基準を先に復元しておく。
+        # ここで復元しないと、最後の永続化で価格キャッシュを消してしまうため必須。
+        run: |
+          if git ls-remote --exit-code --heads origin data >/dev/null 2>&1; then
+            git fetch origin data --depth 1
+            git checkout origin/data -- history.db && echo "history.db 復元" || echo "history.db なし"
+            git checkout origin/data -- .cache && echo ".cache 復元" || echo ".cache なし"
+            git reset -q
+          else
+            echo "data ブランチ未作成（初回）"
+          fi
+
+      - name: run popularity
+        env:
+          MODEL_LIMIT: ${{ github.event.inputs.limit }}
+        run: python refresh_popularity.py
+
+      - name: publish -> golf-price-mobile (popularity.html + json)
+        if: ${{ github.event.inputs.limit == '' }}   # 全機種のときだけ本番公開
+        env:
+          DEPLOY_KEY: ${{ secrets.MOBILE_DEPLOY_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts 2>/dev/null
+          GIT_SSH_COMMAND="ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes" \
+            git clone --depth 1 git@github.com:nekokaitaidesu-cpu/golf-price-mobile.git mobilepush
+          cp -f .cache/popularity.json mobilepush/popularity.json
+          cp -f static/popularity.html mobilepush/popularity.html
+          cd mobilepush
+          touch .nojekyll
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "変更なし"
+          else
+            git commit -q -m "popularity $(date -u +'%Y-%m-%d %H:%M')UTC"
+            GIT_SSH_COMMAND="ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes" git push
+          fi
+
+      - name: persist -> data branch (.cache + history.db)
+        if: ${{ github.event.inputs.limit == '' }}
+        run: |
+          # 安全策: history.db が復元できていない＝dataブランチの中身が手元に無い状態で
+          # force-push すると価格キャッシュや前日比基準を消すため、その場合は永続化しない
+          if [ ! -s history.db ]; then
+            echo "history.db が空/無し → 永続化スキップ（既存データを保護）"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -q --orphan data-tmp
+          git reset -q
+          git add -f history.db .cache
+          git commit -q -m "data+popularity $(date -u +'%Y-%m-%d %H:%M')UTC"
+          git push -f origin data-tmp:data

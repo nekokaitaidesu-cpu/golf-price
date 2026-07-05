@@ -129,6 +129,23 @@ def api_hot(category: str = Query("")):
             "count": len(rows), "rows": rows[:100]}
 
 
+@app.get("/api/popularity")
+def api_popularity():
+    """メルカリ人気ランキング（refresh_popularity.py が書いた popularity.json）。"""
+    import json
+    p = cache.CACHE_DIR / "popularity.json"
+    if not p.exists():
+        return JSONResponse(
+            {"error": "未集計です。python refresh_popularity.py を実行してください"},
+            status_code=404)
+    return JSONResponse(json.loads(p.read_text(encoding="utf-8")))
+
+
+@app.get("/popularity")
+def popularity_page():
+    return FileResponse(STATIC_DIR / "popularity.html")
+
+
 @app.get("/api/updated")
 def api_updated():
     """データの最終取得時刻（キャッシュ内 _fetched_at の最新）を返す。

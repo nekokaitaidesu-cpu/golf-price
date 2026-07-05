@@ -163,6 +163,9 @@ function viewHome(){
   $("#app").innerHTML = searchBar("")
     + `<button class="hotbtn" onclick="go('hot=1')">🔥 メルカリ激アツピックアップ
          <span class="c">直近実売より大幅に安い販売中出品${nhot ? `・いま${nhot}件` : ""}</span></button>`
+    + `<button class="hotbtn" style="background:linear-gradient(135deg,#12202e,#101822);border-color:#234a7a;color:#8ec2ff"
+         onclick="location.href='popularity.html'">🏆 メルカリ人気ランキング
+         <span class="c">直近30日で何が何本売れたか・売切率・在庫過多・即売れ機種</span></button>`
     + `<div class="catgrid">` + DATA.categories.map(c=>
     `<button class="catbtn" onclick="go('c=${c.key}')">${c.label}<span class="c">${c.count}機種</span></button>`
   ).join("") + `</div>
