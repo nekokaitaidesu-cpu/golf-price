@@ -8,6 +8,8 @@ venv/
 # 実行時データ・キャッシュ・ログ（生成物なので管理しない）
 .cache/
 refresh.log
+notify.log
+run_log.txt
 history.db
 history.csv
 
