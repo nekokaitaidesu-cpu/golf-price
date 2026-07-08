@@ -87,13 +87,28 @@ def publish() -> str:
 
     初回に gh で作成済みの site/.git（remote=origin）が前提。未設定ならスキップ。
     """
+    import shutil
     import subprocess
+    import tempfile
     if not (SITE / ".git").exists():
         return "site/ は未公開設定（git未初期化）のためスキップ"
 
     def git(*args):
         return subprocess.run(["git", "-C", str(SITE), *args],
                               capture_output=True, text=True)
+
+    # クラウド(Actions)が同じリポへ1日8回pushするためローカルはほぼ常に遅れており、
+    # そのままpushすると fetch first で拒否される。リモートの最新に合わせてから
+    # 生成し直した data.json / index.html だけを重ねる（クラウド側が置いた
+    # popularity.json 等を消さないよう、reset --hard で丸ごと同期してから上書き）。
+    if git("fetch", "origin", "main").returncode == 0:
+        ours = [n for n in ("data.json", "index.html") if (SITE / n).exists()]
+        with tempfile.TemporaryDirectory() as td:
+            for n in ours:
+                shutil.copy2(SITE / n, Path(td) / n)
+            git("reset", "--hard", "origin/main")
+            for n in ours:
+                shutil.copy2(Path(td) / n, SITE / n)
 
     git("add", "-A")
     st = git("status", "--porcelain")
