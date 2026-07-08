@@ -44,11 +44,14 @@ jobs:
 
       - run: pip install requests beautifulsoup4 cryptography
 
-      - name: restore history.db (前日比の基準)
+      - name: restore data branch (.cache + history.db)
+        # .cache も復元しないと、最後の永続化(force-push)で popularity.json など
+        # 他ワークフローが置いたキャッシュを data ブランチから消してしまう
         run: |
           if git ls-remote --exit-code --heads origin data >/dev/null 2>&1; then
             git fetch origin data --depth 1
             git checkout origin/data -- history.db && echo "history.db 復元" || echo "history.db なし"
+            git checkout origin/data -- .cache && echo ".cache 復元" || echo ".cache なし"
             git reset -q
           else
             echo "data ブランチ未作成（初回）"
