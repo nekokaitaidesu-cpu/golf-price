@@ -107,7 +107,8 @@ def scan_model(entry: dict, since: float) -> list[dict]:
         ratio = p["price"] / median
         if not (RATIO_MIN <= ratio <= RATIO_MAX):
             continue
-        cond = int(raw_by_id.get(p["id"], {}).get("itemConditionId") or 0)
+        raw = raw_by_id.get(p["id"], {})
+        cond = int(raw.get("itemConditionId") or 0)
         if cond > COND_MAX:
             continue
         out.append({
@@ -116,6 +117,9 @@ def scan_model(entry: dict, since: float) -> list[dict]:
             "median": median, "ratio": ratio, "cond": cond,
             "sell_rate": row.get("sell_rate"),
             "w7_sold": (row.get("w7") or {}).get("sold"),
+            # オークション形式（入札制）。即決購入できないので通知に明記する
+            # （2026-07-09: SIM2がオークションだと知らずに通知してしまった）
+            "auction": bool(raw.get("auction")),
         })
     return out
 
@@ -177,9 +181,17 @@ def format_alert(a: dict) -> str:
     ago = int((time.time() - a["created"]) / 60)
     cond = COND_LABEL.get(a["cond"], "状態不明")
     likes = "説明文未検証" if a.get("likes") is None else f"いいね{a['likes']}"
+    warns = ""
+    if a.get("auction"):
+        warns += "\n🔨オークション形式（即決不可・入札制）"
+    # タイトルに「シャフト」を含む出品はシャフト単品の可能性がある
+    # （2026-07-09: 「純正SRシャフト」表記のシャフト単品が通知をすり抜けた。
+    #   カスタムシャフト装着の完品も同語を使うため、除外ではなく注意喚起に留める）
+    if "シャフト" in a["title"]:
+        warns += "\n⚠タイトルにシャフト表記 → 単品出品でないか説明文を確認"
     return (f"\n▼{a['label']}\n"
             f"¥{a['price']:,}（実売中央¥{a['median']:,}の{a['ratio']:.0%}）\n"
-            f"{cond}｜{ago}分前出品｜{likes}｜7日{a['w7_sold']}本売れ\n"
+            f"{cond}｜{ago}分前出品｜{likes}｜7日{a['w7_sold']}本売れ{warns}\n"
             f"{a['title'][:40]}\n{ITEM_URL.format(id=a['id'])}")
 
 
