@@ -9,7 +9,11 @@ auto-memory（honmei-genbutsu-check / flip-inventory）を必ず参照。
 
 1. **同期**: `git fetch origin data --depth 1` →
    `git checkout origin/data -- history.db .cache` → `git reset --quiet`
-   （クラウドが1日8回更新。popularity.json の generated_at を確認）
+   （popularity.json の generated_at を確認）
+   **クラウドのスケジュール**: refresh = JST 13時〜23時台に約8回 / popularity = 早朝5時頃。
+   **深夜〜午前に「データが昨日のまま」は正常**であり停止ではない（7/8と7/12に
+   2回「停止」と誤診した前科あり）。本当に止まっていそうなら `gh run list` で
+   スケジュール時間帯に成功実績があるか見る。手動再実行は `gh workflow run refresh` 等
 2. **スキャン**: `python scripts/honmei_scan.py`（約10分・バックグラウンド推奨）
    → ライブ再集計を popularity.json にマージ＋一次候補を
    `.cache/honmei_candidates.json` に出力
