@@ -30,7 +30,9 @@ auto-memory（honmei-genbutsu-check / flip-inventory）を必ず参照。
    ③セット物は本数を数える。「いいね多数×売れ残り」は割安でない証拠として減点
 5. **楽天照合**: history.db の当日 used_min × ライブ実売中央値で
    粗利 = 中央値×0.9 − 送料1,500 − used_min。**回転（7日売れ数）のない粗利は罠**
-6. **メモ保存**: `honmei_notes/YYYY-MM-DD.md`。フォーマットは前日のメモを踏襲
+6. **探し物チェック**: auto-memory の flip-inventory「探し物」欄にある品を
+   スポット検索（search_recent_raw を1〜2クエリ）し、条件合致があれば報告に含める
+7. **メモ保存**: `honmei_notes/YYYY-MM-DD.md`。フォーマットは前日のメモを踏襲
    （データ基準の時刻注記・本命・検死記録表・楽天本命・傾向・教訓・所感）
 
 ## 判断基準（2026-07時点の運用値）
