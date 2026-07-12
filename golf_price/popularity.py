@@ -16,7 +16,7 @@ import statistics
 import time
 
 from .catalog import DriverModel
-from .normalize import is_parts_junk, detect_head_only, normalize
+from .normalize import is_lefty, is_parts_junk, detect_head_only, normalize
 from .scrapers import mercari
 from .service import _catalog_match
 
@@ -45,6 +45,9 @@ def _pick(raws: list[dict], m: DriverModel, min_price: int, since: float) -> lis
         if not price or not title or created < since:
             continue
         if int(price) < min_price or is_parts_junk(title):
+            continue
+        # レフティは別市場（右用の相場・割安候補に混ぜない。2026-07-12）
+        if is_lefty(title):
             continue
         if not _catalog_match(title, m):
             continue

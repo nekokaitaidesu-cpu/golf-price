@@ -6,7 +6,8 @@ from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 
 from .spec import MODELS, DEFAULT_MODEL_KEY, ModelSpec
-from .normalize import (analyze, normalize, detect_head_only, is_parts_junk,
+from .normalize import (analyze, normalize, detect_head_only, is_lefty,
+                        is_parts_junk,
                         compact, extract_loft, looks_like_iron_set)
 from .scrapers import rakuten, golfpartner, yahoo_auction, mercari
 from .scrapers.base import Listing
@@ -431,9 +432,13 @@ def run_catalog_model(m: DriverModel, pages: int = 2) -> dict:
     min_f = 1500 if m.category == "chipper" else MIN_FLEA_PRICE
     # 高速化: 楽天(中古)とメルカリ(フリマ)を並列取得（別サイトなので安全）
     def _fetch_used():
+        # ヘッド単品・レフティも除外（2026-07-12: 楽天used_minが
+        # 「Qi10レスキュー ヘッドのみ」「左用3W」で下振れ汚染されていた）
         out = []
         for l in rakuten.search(m.keyword + " 中古", pages=1):
             if (l.is_used and not is_parts_junk(l.title)
+                    and not detect_head_only(normalize(l.title))
+                    and not is_lefty(l.title)
                     and l.price >= min_u and _catalog_match(l.title, m)):
                 l.loft = extract_loft(l.title)
                 out.append(l)
@@ -443,6 +448,7 @@ def run_catalog_model(m: DriverModel, pages: int = 2) -> dict:
         # 採用5+2件と少数なので、ヘッドのみ出品も除外（完品の売値相場に揃える）
         return (l.price >= min_f and not is_parts_junk(l.title)
                 and not detect_head_only(normalize(l.title))
+                and not is_lefty(l.title)
                 and _catalog_match(l.title, m))
 
     # 🔥メルカリ→メルカリ: 直近実売より大幅に安い「販売中」出品（_fetch_sold が詰める）

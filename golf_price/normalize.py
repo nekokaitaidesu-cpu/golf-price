@@ -105,6 +105,16 @@ def detect_head_only_desc(norm_desc: str) -> bool:
     return bool(_HEAD_ONLY_DESC_PAT.search(norm_desc))
 
 
+# レフティ（左用）は市場が別で相場も薄い。右用の相場・候補に混ぜない
+# （2026-07-12: 楽天used_minが左用3Wで、メルカリ候補にGT2レフティが混入していた）
+_LEFTY_PAT = re.compile(r"レフティ|左用|左利き|左打ち|lefty|left\s*hand", re.I)
+
+
+def is_lefty(title: str) -> bool:
+    """左用（レフティ）出品かどうか。"""
+    return bool(_LEFTY_PAT.search(title or ""))
+
+
 # 中古/新品の判定（ソースが中古フラグを持たない場合の補助）
 def detect_used(norm_title: str) -> bool:
     return ("中古" in norm_title) and ("新品" not in norm_title)
