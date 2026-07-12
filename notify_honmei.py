@@ -23,6 +23,7 @@ LINE は TP07ハンターと同じ Messaging API push。
 import argparse
 import json
 import os
+import re
 import time
 
 import requests
@@ -56,6 +57,22 @@ MAX_ALERTS = 8          # 1回の通知に載せる最大件数
 
 COND_LABEL = {1: "新品・未使用", 2: "未使用に近い", 3: "目立った傷なし",
               4: "やや傷あり", 5: "傷あり", 6: "状態悪い"}
+
+# FW/UTは番手で相場が別物（例: Qi10 FWは5W 22千円 vs 7W 38千円。
+# ブレンド中央値との比較だけでは割安に見えてしまう）ため、通知に番手を出す
+_LOFT_TAG = re.compile(
+    r"(?P<w>[3579])\s*[wW]|#\s*(?P<n>[3-9])|(?P<u>[2-6])\s*[uU]|"
+    r"[uU]\s*(?P<u2>[2-6])|(?P<b>[2-6])番")
+
+
+def loft_tag(title: str) -> str:
+    m = _LOFT_TAG.search(title or "")
+    if not m:
+        return ""
+    if m.group("w"):
+        return f"{m.group('w')}W"
+    n = m.group("n") or m.group("u") or m.group("u2") or m.group("b")
+    return f"{n}番" if n else ""
 
 
 def load_watchlist() -> list[dict]:
@@ -182,6 +199,9 @@ def format_alert(a: dict) -> str:
     cond = COND_LABEL.get(a["cond"], "状態不明")
     likes = "説明文未検証" if a.get("likes") is None else f"いいね{a['likes']}"
     warns = ""
+    tag = loft_tag(a["title"])
+    if tag:
+        warns += f"\n📏番手 {tag}（FW/UTは番手で相場が別物、番手別の実売と比較を）"
     if a.get("auction"):
         warns += "\n🔨オークション形式（即決不可・入札制）"
     # タイトルに「シャフト」を含む出品はシャフト単品の可能性がある
