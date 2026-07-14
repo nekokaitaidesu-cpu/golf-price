@@ -194,11 +194,21 @@ def save_state(state: dict) -> None:
         json.dump(state, f, ensure_ascii=False, indent=1)
 
 
+SHIPPING_EST = 1850    # 想定送料（クラブ1本・ヤマト160相当）
+FEE_RATE = 0.10        # メルカリ手数料
+
+
 def format_alert(a: dict) -> str:
     ago = int((time.time() - a["created"]) / 60)
     cond = COND_LABEL.get(a["cond"], "状態不明")
     likes = "説明文未検証" if a.get("likes") is None else f"いいね{a['likes']}"
-    warns = ""
+    # 中央値で売り直した場合の概算利益。スマホで通知を見た瞬間に
+    # 「買う/見送る」を決められるように（2026-07-14: ROGUE ST 13,500円が
+    # 12分×2回で消え、判断時間が足りなかった反省から）
+    est = round(a["median"] * (1 - FEE_RATE) - SHIPPING_EST - a["price"])
+    profit = (f"\n💰中央値で売り直し想定 {est:+,}円"
+              f"（手数料10%・送料{SHIPPING_EST:,}円試算）" if est >= 1500 else "")
+    warns = profit
     tag = loft_tag(a["title"])
     if tag:
         warns += f"\n📏番手 {tag}（FW/UTは番手で相場が別物、番手別の実売と比較を）"
