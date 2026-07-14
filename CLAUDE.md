@@ -29,7 +29,9 @@ auto-memory（honmei-genbutsu-check / flip-inventory）を必ず参照。
    （説明文無言のヘッド単品が実在） ②フェース・ソール・クラウンの傷
    ③セット物は本数を数える。「いいね多数×売れ残り」は割安でない証拠として減点
 5. **楽天照合**: history.db の当日 used_min × ライブ実売中央値で
-   粗利 = 中央値×0.9 − 送料1,500 − used_min。**回転（7日売れ数）のない粗利は罠**
+   粗利 = 中央値×0.9 − 送料1,500 − used_min。**回転（7日売れ数）のない粗利は罠**。
+   ウォッチ品・買いライン判定は used_min（数時間遅れ）でなく
+   `python scripts/rakuten_spot.py <key>...` でライブ照合（URL付き・4点確認の入口）
 6. **探し物チェック**: auto-memory の flip-inventory「探し物」欄にある品を
    スポット検索（search_recent_raw を1〜2クエリ）し、条件合致があれば報告に含める
 7. **メモ保存**: `honmei_notes/YYYY-MM-DD.md`。フォーマットは前日のメモを踏襲
