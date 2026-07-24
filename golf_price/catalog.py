@@ -334,8 +334,10 @@ CATALOG: list[DriverModel] = [
                 "ミズノ JPX923 アイアン", ["jpx923"], [], category="iron"),
     DriverModel("ir_mz_jpx925", "ミズノ", "JPX925", "2024",
                 "ミズノ JPX925 アイアン", ["jpx925"], [], category="iron"),
-    DriverModel("ir_mz_pro", "ミズノ", "Pro 241/243/245", "2023",
-                "ミズノ Pro アイアン", ["ミズノ|mizuno", "pro24"], [], category="iron"),
+    DriverModel("ir_mz_pro", "ミズノ", "Pro 241/243", "2023",
+                "ミズノ Pro アイアン", ["ミズノ|mizuno", "pro24"], ["pro245"], category="iron"),
+    DriverModel("ir_mz_pro245", "ミズノ", "Pro 245", "2023",
+                "ミズノ Pro 245 アイアン", ["ミズノ|mizuno", "pro245"], [], category="iron"),
 
     # ============================================================
     #  名機（〜2020・今も人気/リセール良好）  ※ '=' は単語境界マッチ
@@ -478,11 +480,15 @@ CATALOG: list[DriverModel] = [
     DriverModel("ir_mz_jpx900", "ミズノ", "JPX900", "2016",
                 "ミズノ JPX900 アイアン", ["jpx900"], [], category="iron"),
     DriverModel("ir_mz_mp20", "ミズノ", "MP-20", "2019",
-                "ミズノ MP-20 アイアン", ["ミズノ|mizuno", "mp20"], [], category="iron"),
+                "ミズノ MP-20 アイアン", ["ミズノ|mizuno", "mp20"], ["hmb"], category="iron"),
+    DriverModel("ir_mz_mp20hmb", "ミズノ", "MP-20 HMB", "2019",
+                "ミズノ MP-20 HMB アイアン", ["ミズノ|mizuno", "mp20", "hmb"], [], category="iron"),
     DriverModel("ir_mz_mp18", "ミズノ", "MP-18", "2017",
                 "ミズノ MP-18 アイアン", ["ミズノ|mizuno", "mp18"], [], category="iron"),
-    DriverModel("ir_mz_pro22", "ミズノ", "Pro 221/223/225", "2021",
-                "ミズノ Pro 223 アイアン", ["ミズノ|mizuno", "pro22"], [], category="iron"),
+    DriverModel("ir_mz_pro22", "ミズノ", "Pro 221/223", "2021",
+                "ミズノ Pro 223 アイアン", ["ミズノ|mizuno", "pro22"], ["pro225"], category="iron"),
+    DriverModel("ir_mz_pro225", "ミズノ", "Pro 225", "2021",
+                "ミズノ Pro 225 アイアン", ["ミズノ|mizuno", "pro225"], [], category="iron"),
 
     # ============ 2021〜2024 アイアン 追加（主要メーカー兄弟機・残り） ============
     # テーラーメイド
