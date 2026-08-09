@@ -70,7 +70,7 @@ def main():
         return 1
 
     # 部分実行（--category/--keys/--limit）は既存ファイルへマージする。
-    # 以前は丸ごと上書きしていたため、部門1つを流すと他部門が消えた（2026-08-10に実害）
+    # 以前は丸ごと上書きしていたため、部門1つを流すと他部門が消えた（2026-08-09に実害）
     now = time.strftime("%Y-%m-%d %H:%M")
     generated_at, partial_at = now, None
     is_subset = len(targets) < len(CATALOG)

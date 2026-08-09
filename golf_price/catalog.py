@@ -29,7 +29,7 @@ CATEGORIES = [
     ("iron", "アイアン"),
     ("chipper", "チッパー"),
     # ミニドライバー＋短尺(43.5インチ級)ドライバー。本数は少ないが単価が高く
-    # 「通常品と同じ値付けで出される」ミスが起きやすいので独立部門にする（2026-08-10）
+    # 「通常品と同じ値付けで出される」ミスが起きやすいので独立部門にする（2026-08-09）
     ("mini", "ミニドラ・短尺"),
 ]
 CATEGORY_LABEL = dict(CATEGORIES)
@@ -665,7 +665,7 @@ CATALOG: list[DriverModel] = [
                 "テーラーメイド Qi35 ドライバー", ["qi35"], ["max", "ls"]),
     DriverModel("dr_mazel_mini", "MAZEL", "SPEED ミニドライバー", "—",
                 "MAZEL ミニ ドライバー", ["mazel|マゼル"], [], category="mini"),
-    # 2026-08-10: 重複していた yt_driver_brnr を統合（同一機種が候補リストに2回出ていた）
+    # 2026-08-09: 重複していた yt_driver_brnr を統合（同一機種が候補リストに2回出ていた）
     DriverModel("dr_tm_brnrmini", "テーラーメイド", "BRNR Mini", "2023",
                 "テーラーメイド BRNR ミニ ドライバー", ["brnr"], [], category="mini"),
     # --- フェアウェイウッド ---
@@ -1613,7 +1613,7 @@ CATALOG: list[DriverModel] = [
     DriverModel("yt_driver_ud", "ヤマハ", "インプレス UD+2", "—",
                 "ヤマハ インプレス UD+2 ドライバー", ["ヤマハ|yamaha", "インプレスud+"], []),
 
-    # ============ ミニドラ・短尺（2026-08-10 新設分） ============
+    # ============ ミニドラ・短尺（2026-08-09 新設分） ============
     # ※既存のミニドラ（GT280 / BRNR / R7 Quad / 300 MINI / オリジナルワン /
     #   QUANTUM MINI / Ai SMOKE Ti 340 MINI / MAZEL / ドライブスターSteady）は
     #   各ブランド節に置いたまま category="mini" を付けて移動済み
