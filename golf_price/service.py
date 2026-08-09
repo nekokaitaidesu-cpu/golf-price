@@ -258,7 +258,15 @@ CLUB_TOKENS = {
     "ut": ["ユーティリティ", "utility", "ハイブリッド", "hybrid", "レスキュー", "rescue"],
     "iron": ["アイアン", "iron"],
     "chipper": ["チッパー", "chipper"],
+    # ミニドラ・短尺は「ドライバー」を書かない出品が多い
+    # （例:「RMX VD/M Steady Version 10.5° Rシャフト」）。ミニ/短尺/1W/ステディも種別語に含める。
+    # 緩めても機種側 required で機種は絞られ、FW/UT/アイアンとの相互除外も従来どおり効く
+    "mini": ["ドライバー", "driver", "ミニドライバー", "ミニドラ", "mini",
+             "短尺", "1w", "ステディ", "steady"],
 }
+# 種別語が重なっても除外し合わないカテゴリ（mini の商品名は「◯◯ドライバー」なので
+# driver 語で弾いてはいけない。FW/UT/アイアン等との相互除外は従来どおり効かせる）
+_CLUB_COMPATIBLE = {"mini": {"driver"}, "driver": {"mini"}}
 # どのカテゴリでも除外したい別クラブ種別
 _ALWAYS_EXCLUDE_CLUB = ["ウェッジ", "wedge", "パター", "putter"]
 
@@ -395,8 +403,9 @@ def _catalog_match(title: str, m: DriverModel) -> bool:
     # チッパーは「アイアン型/パター型チッパー」等の表記があるためクロス除外しない
     if m.category != "chipper":
         # 他カテゴリの種別語が入っていたら別クラブ品として除外
+        compatible = _CLUB_COMPATIBLE.get(m.category, frozenset())
         for cat, toks in CLUB_TOKENS.items():
-            if cat == m.category:
+            if cat == m.category or cat in compatible:
                 continue
             if any(compact(t) in c for t in toks):
                 return False

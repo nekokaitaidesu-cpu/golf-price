@@ -84,7 +84,7 @@
 <script>
 const $ = s => document.querySelector(s);
 const yen = n => (n==null) ? "—" : "¥" + n.toLocaleString();
-const CATS = [["","すべて"],["driver","ドライバー"],["fw","FW"],["ut","UT"],["iron","アイアン"],["chipper","チッパー"]];
+const CATS = [["","すべて"],["driver","ドライバー"],["fw","FW"],["ut","UT"],["iron","アイアン"],["chipper","チッパー"],["mini","ミニドラ・短尺"]];
 const SORTS = [
   ["sold",  "🏆 人気順",   (a,b)=> b.sold - a.sold || (b.sell_rate||0)-(a.sell_rate||0)],
   ["days",  "⚡ 即売れ順", (a,b)=> (a.days_median==null)-(b.days_median==null)

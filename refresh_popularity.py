@@ -27,7 +27,8 @@ OUT_PATH = CACHE_DIR / "popularity.json"
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--category", default="", help="driver/fw/ut/iron/chipper に絞る")
+    ap.add_argument("--category", default="",
+                    help="driver/fw/ut/iron/chipper/mini に絞る")
     ap.add_argument("--limit", type=int, default=0, help="先頭N機種だけ（テスト用）")
     ap.add_argument("--keys", default="", help="カンマ区切りの機種キー指定")
     ap.add_argument("--window", type=int, default=30, help="集計期間（日）")
@@ -68,15 +69,37 @@ def main():
         print("結果0件のため popularity.json は更新しません")
         return 1
 
+    # 部分実行（--category/--keys/--limit）は既存ファイルへマージする。
+    # 以前は丸ごと上書きしていたため、部門1つを流すと他部門が消えた（2026-08-10に実害）
+    now = time.strftime("%Y-%m-%d %H:%M")
+    generated_at, partial_at = now, None
+    is_subset = len(targets) < len(CATALOG)
+    if is_subset and OUT_PATH.exists():
+        try:
+            prev = json.loads(OUT_PATH.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError) as e:
+            print(f"既存 popularity.json を読めないため単独で書き出します: {e}")
+        else:
+            fresh = {r["key"] for r in rows}
+            kept = [r for r in prev.get("rows", []) if r.get("key") not in fresh]
+            rows += kept
+            # 大半は前回時刻のデータなので generated_at は据え置き（鮮度を偽らない）
+            generated_at = prev.get("generated_at") or now
+            partial_at = now
+            print(f"既存 {len(kept)}機種を保持してマージ（全体 {len(rows)}機種）")
+
     rows.sort(key=lambda r: (-r["sold"], -(r["sell_rate"] or 0)))
     data = {
-        "generated_at": time.strftime("%Y-%m-%d %H:%M"),
+        "generated_at": generated_at,
         "window_days": args.window,
         "windows": [args.window] + [w for w in (7,) if w < args.window],
         "model_count": len(rows),
         "errors": errors,
         "rows": rows,
     }
+    if partial_at:
+        data["partial_updated_at"] = partial_at
+        data["partial_keys"] = sorted(m.key for m in targets)
     OUT_PATH.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
     mins = round((time.time() - t0) / 60, 1)
     print(f"完了: {len(rows)}機種を書き出し → {OUT_PATH}（{mins}分, 失敗{errors}件）")

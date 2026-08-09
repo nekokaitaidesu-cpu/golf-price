@@ -28,6 +28,9 @@ CATEGORIES = [
     ("ut", "ユーティリティ"),
     ("iron", "アイアン"),
     ("chipper", "チッパー"),
+    # ミニドライバー＋短尺(43.5インチ級)ドライバー。本数は少ないが単価が高く
+    # 「通常品と同じ値付けで出される」ミスが起きやすいので独立部門にする（2026-08-10）
+    ("mini", "ミニドラ・短尺"),
 ]
 CATEGORY_LABEL = dict(CATEGORIES)
 
@@ -224,7 +227,8 @@ CATALOG: list[DriverModel] = [
     DriverModel("ym_inpresud2", "ヤマハ", "inpres UD+2", "2021",
                 "ヤマハ インプレス UD+2 ドライバー", ["ud+2"], []),
     DriverModel("ym_drivestar", "ヤマハ", "inpres DRIVESTAR", "2022",
-                "ヤマハ インプレス ドライブスター ドライバー", ["drivestar|ドライブスター"], []),
+                "ヤマハ インプレス ドライブスター ドライバー", ["drivestar|ドライブスター"],
+                ["steady|ステディ|短尺|43.5"]),
 
     # ============ 本間 HONMA ※写真より ============
     DriverModel("hm_twgs", "本間", "TOUR WORLD GS", "2022",
@@ -660,9 +664,9 @@ CATALOG: list[DriverModel] = [
     DriverModel("dr_tm_qi35", "テーラーメイド", "Qi35", "2025",
                 "テーラーメイド Qi35 ドライバー", ["qi35"], ["max", "ls"]),
     DriverModel("dr_mazel_mini", "MAZEL", "SPEED ミニドライバー", "—",
-                "MAZEL ミニ ドライバー", ["mazel|マゼル"], []),
+                "MAZEL ミニ ドライバー", ["mazel|マゼル"], [], category="mini"),
     DriverModel("dr_tm_brnrmini", "テーラーメイド", "BRNR Mini", "2023",
-                "テーラーメイド BRNR ミニ ドライバー", ["brnr"], []),
+                "テーラーメイド BRNR ミニ ドライバー", ["brnr"], [], category="mini"),
     # --- フェアウェイウッド ---
     DriverModel("fw_tm_rbz", "テーラーメイド", "RBZ（ロケットボールズ）", "—",
                 "テーラーメイド RBZ ロケットボールズ フェアウェイウッド",
@@ -699,7 +703,7 @@ CATALOG: list[DriverModel] = [
                 "ホンマ T//WORLD TW777 Vx アイアン", ["tw777"], [], category="iron"),
     DriverModel("yt_driver_quantum", "キャロウェイ", "QUANTUM MINI", "—",
                 "キャロウェイ QUANTUM MINI ドライバー",
-                ["quantum|クアンタム|クァンタム", "mini|ミニ"], []),
+                ["quantum|クアンタム|クァンタム", "mini|ミニ"], [], category="mini"),
     DriverModel("yt_driver_usa250", "キャロウェイ", "QUANTUM USA250シリーズ", "—",
                 "キャロウェイ QUANTUM USA250シリーズ ドライバー", ["usa250"], []),
     DriverModel("yt_fw_vxmax", "ロイヤルコレクション", "VX MAX", "—",
@@ -746,8 +750,8 @@ CATALOG: list[DriverModel] = [
                 "コブラ 3DP X アイアン", ["コブラ|cobra", "3dpx"], [], category="iron"),
     DriverModel("yt_iron_star", "キャロウェイ", "X FORGED STAR (2026）", "—",
                 "キャロウェイ X FORGED STAR (2026） アイアン", ["キャロウェイ|callaway", "star"], [], category="iron"),
-    DriverModel("yt_driver_king", "コブラ", "KING TEC Mini", "—",
-                "コブラ KING TEC Mini ドライバー", ["コブラ|cobra", "king"], []),
+    DriverModel("yt_driver_king", "コブラ", "KING TEC-MD ミニドライバー", "2024",
+                "コブラ KING TEC ミニドライバー", ["kingtec"], [], category="mini"),
     DriverModel("yt_iron_3dpmb", "コブラ", "3DP MB", "—",
                 "コブラ 3DP MB アイアン", ["コブラ|cobra", "3dpmb"], [], category="iron"),
     DriverModel("yt_iron_126jp", "キャスコ", "ORCA STUDIO OI-126JP", "—",
@@ -867,17 +871,18 @@ CATALOG: list[DriverModel] = [
     DriverModel("yt_driver_10k2", "キャロウェイ", "ELYTE X 10Kバージョン", "—",
                 "キャロウェイ ELYTE X 10Kバージョン ドライバー", ["キャロウェイ|callaway", "10k"], []),
     DriverModel("yt_driver_quad", "テーラーメイド", "R7 Quad Mini", "—",
-                "テーラーメイド R7 Quad Mini ドライバー", ["テーラーメイド|taylormade", "quad"], []),
-    DriverModel("yt_driver_drivestar", "ヤマハ", "INPRES DRIVESTAR Steady Version", "—",
-                "ヤマハ INPRES DRIVESTAR Steady Version ドライバー", ["ヤマハ|yamaha", "drivestar"], []),
+                "テーラーメイド R7 Quad Mini ドライバー", ["テーラーメイド|taylormade", "quad|クアッド|クワッド"], [], category="mini"),
+    DriverModel("yt_driver_drivestar", "ヤマハ", "inpres DRIVESTAR Steady Version", "2025",
+                "ヤマハ インプレス ドライブスター ドライバー",
+                ["drivestar|ドライブスター", "steady|ステディ|短尺|43.5"], [], category="mini"),
     DriverModel("yt_iron_majesty", "マジェスティ", "MAJESTY Royale", "—",
                 "マジェスティ MAJESTY Royale アイアン", ["マジェスティ|majesty", "majesty"], [], category="iron"),
     DriverModel("yt_driver_majesty", "マジェスティ", "MAJESTY Royale", "—",
                 "マジェスティ MAJESTY Royale ドライバー", ["マジェスティ|majesty", "majesty"], []),
     DriverModel("yt_iron_03", "プロギア", "03", "—",
                 "プロギア 03 アイアン", ["プロギア|prgr", "03"], [], category="iron"),
-    DriverModel("yt_driver_gt280", "タイトリスト", "GT280", "—",
-                "タイトリスト GT280 ドライバー", ["gt280"], []),
+    DriverModel("yt_driver_gt280", "タイトリスト", "GT280 ミニドライバー", "—",
+                "タイトリスト GT280 ドライバー", ["gt280"], [], category="mini"),
     DriverModel("yt_driver_speed", "プロギア", "RS SPEED", "—",
                 "プロギア RS SPEED ドライバー", ["プロギア|prgr", "rsspeed|=speed"], []),
     DriverModel("yt_driver_black", "PXG", "Black Ops Ultra-Lite", "—",
@@ -963,7 +968,8 @@ CATALOG: list[DriverModel] = [
     DriverModel("yt_driver_driver3", "テーラーメイド", "BRNR Mini Driver Copper", "—",
                 "テーラーメイド BRNR Mini Driver Copper ドライバー", ["テーラーメイド|taylormade", "driver"], []),
     DriverModel("yt_driver_paradym", "キャロウェイ", "PARADYM Ai SMOKE Ti 340 MINI", "—",
-                "キャロウェイ PARADYM Ai SMOKE Ti 340 MINI ドライバー", ["キャロウェイ|callaway", "paradym"], []),
+                "キャロウェイ PARADYM Ai SMOKE Ti 340 MINI ドライバー",
+                ["paradym|パラダイム|aismoke", "340|mini|ミニ"], [], category="mini"),
     DriverModel("yt_iron_c05tp", "プロトコンセプト", "C05TP", "—",
                 "プロトコンセプト C05TP アイアン", ["c05tp"], [], category="iron"),
     DriverModel("yt_driver_darkspeed", "コブラ", "DARKSPEED TOUR LENGTH", "—",
@@ -1063,7 +1069,8 @@ CATALOG: list[DriverModel] = [
     DriverModel("yt_iron_tbm", "フォーティーン", "TB-M", "—",
                 "フォーティーン TB-M アイアン", ["フォーティーン|14", "tbm"], [], category="iron"),
     DriverModel("yt_driver_rmx2", "ヤマハ", "RMX VD/R", "—",
-                "ヤマハ RMX VD/R ドライバー", ["ヤマハ|yamaha", "rmx"], []),
+                "ヤマハ RMX VD/R ドライバー", ["rmx", "vd/r|vdr"],
+                ["steady|ステディ|短尺|43.5"]),
     DriverModel("yt_ut_u5052", "タイトリスト", "U505（2023)", "—",
                 "タイトリスト U505（2023) ユーティリティ", ["u505"], [], category="ut"),
     DriverModel("yt_ut_t200", "タイトリスト", "T200（2023)", "—",
@@ -1089,7 +1096,7 @@ CATALOG: list[DriverModel] = [
     DriverModel("yt_driver_bertha", "キャロウェイ", "BIG BERTHA（2023）", "—",
                 "キャロウェイ BIG BERTHA（2023） ドライバー", ["キャロウェイ|callaway", "bertha"], []),
     DriverModel("yt_driver_brnr", "テーラーメイド", "BRNR mini", "—",
-                "テーラーメイド BRNR mini ドライバー", ["テーラーメイド|taylormade", "brnr"], []),
+                "テーラーメイド BRNR mini ドライバー", ["テーラーメイド|taylormade", "brnr"], [], category="mini"),
     DriverModel("yt_driver_50th", "コブラ", "AEROJET LS 50th Anniversary - Limited Ed", "—",
                 "コブラ AEROJET LS 50th Anniversary - Limited Edition ドライバー", ["50th"], []),
     DriverModel("yt_iron_jmh2", "マスダ", "JM-H2", "—",
@@ -1387,7 +1394,7 @@ CATALOG: list[DriverModel] = [
     DriverModel("yt_ut_ixh31732", "アキラプロダクツ", "iX-H 317/320/323", "—",
                 "アキラプロダクツ iX-H 317/320/323 ユーティリティ", ["アキラプロダクツ", "ixh31732"], [], category="ut"),
     DriverModel("yt_driver_300mini", "テーラーメイド", "300 MINI", "—",
-                "テーラーメイド 300 MINI ドライバー", ["テーラーメイド|taylormade", "300mini"], []),
+                "テーラーメイド 300 MINI ドライバー", ["テーラーメイド|taylormade", "300mini"], [], category="mini"),
     DriverModel("yt_fw_fbl", "マスダ", "FBLチタン", "—",
                 "マスダ FBLチタン フェアウェイウッド", ["マスダ", "fbl"], [], category="fw"),
     DriverModel("yt_ut_ls", "PRGR", "LS", "—",
@@ -1562,8 +1569,8 @@ CATALOG: list[DriverModel] = [
                 "ダンロップ SRIXON Z785 ドライバー", ["z785"], []),
     DriverModel("yt_driver_fbl", "マスダ", "FBL", "—",
                 "マスダ FBL ドライバー", ["マスダ", "fbl"], []),
-    DriverModel("yt_driver_x13", "テーラーメイド", "オリジナルワン", "—",
-                "テーラーメイド オリジナルワン ドライバー", ["テーラーメイド|taylormade", "オリジナルワン"], []),
+    DriverModel("yt_driver_x13", "テーラーメイド", "オリジナルワン ミニ", "—",
+                "テーラーメイド オリジナルワン ミニドライバー", ["テーラーメイド|taylormade", "オリジナルワン"], [], category="mini"),
     DriverModel("yt_iron_t", "タイトリスト", "Tシリーズ", "—",
                 "タイトリスト Tシリーズ アイアン", ["タイトリスト|titleist", "tシリーズ"], [], category="iron"),
     DriverModel("yt_ut_x4", "テーラーメイド", "バーナーレスキュー", "—",
@@ -1606,6 +1613,19 @@ CATALOG: list[DriverModel] = [
                 "ヤマハ インプレス UD+2 アイアン", ["ヤマハ|yamaha", "インプレスud+"], [], category="iron"),
     DriverModel("yt_driver_ud", "ヤマハ", "インプレス UD+2", "—",
                 "ヤマハ インプレス UD+2 ドライバー", ["ヤマハ|yamaha", "インプレスud+"], []),
+
+    # ============ ミニドラ・短尺（2026-08-10 新設分） ============
+    # ※既存のミニドラ（GT280 / BRNR / R7 Quad / 300 MINI / オリジナルワン /
+    #   QUANTUM MINI / Ai SMOKE Ti 340 MINI / MAZEL / ドライブスターSteady）は
+    #   各ブランド節に置いたまま category="mini" を付けて移動済み
+    DriverModel("mn_cw_elyte_mini", "キャロウェイ", "ELYTE Mini", "2025",
+                "キャロウェイ ELYTE ミニ ドライバー",
+                ["elyte|エリート", "mini|ミニ"], ["elytex|エリートx"], category="mini"),
+    # ヤマハ Steady Version = 43.5インチ短尺のネット販売限定モデル。
+    # ショップ中古（楽天/ゴルパ）にほぼ出ず個人間フリマ専売なので価格が読まれにくい
+    DriverModel("mn_ym_rmxvdm_steady", "ヤマハ", "RMX VD/M Steady Version", "2023",
+                "ヤマハ RMX VD ドライバー",
+                ["rmx", "steady|ステディ|短尺|43.5"], [], category="mini"),
 
     # ==================== チッパー ====================
     DriverModel("ch_ping_chipr", "ピン", "CHIPR", "2022",
@@ -1694,7 +1714,7 @@ CATALOG: list[DriverModel] = [
     DriverModel("cw_elyte", "キャロウェイ", "ELYTE", "2025",
                 "キャロウェイ ELYTE ドライバー", ["キャロウェイ|callaway", "elyte|エリート"],
                 ["elytex|エリートx", "fast|ファスト", "◆|トリプルダイヤ|triplediamond",
-                 "titanium|チタニウム", "10k"]),
+                 "titanium|チタニウム", "10k", "mini|ミニ"]),
     DriverModel("cw_elytex", "キャロウェイ", "ELYTE X", "2025",
                 "キャロウェイ ELYTE X ドライバー", ["elytex|エリートx"], ["10k"]),
     DriverModel("cw_elyte_maxfast", "キャロウェイ", "ELYTE MAX FAST", "2025",
