@@ -665,6 +665,7 @@ CATALOG: list[DriverModel] = [
                 "テーラーメイド Qi35 ドライバー", ["qi35"], ["max", "ls"]),
     DriverModel("dr_mazel_mini", "MAZEL", "SPEED ミニドライバー", "—",
                 "MAZEL ミニ ドライバー", ["mazel|マゼル"], [], category="mini"),
+    # 2026-08-10: 重複していた yt_driver_brnr を統合（同一機種が候補リストに2回出ていた）
     DriverModel("dr_tm_brnrmini", "テーラーメイド", "BRNR Mini", "2023",
                 "テーラーメイド BRNR ミニ ドライバー", ["brnr"], [], category="mini"),
     # --- フェアウェイウッド ---
@@ -1095,8 +1096,6 @@ CATALOG: list[DriverModel] = [
                 "キャロウェイ BIG BERTHA（2023） フェアウェイウッド", ["キャロウェイ|callaway", "bertha"], [], category="fw"),
     DriverModel("yt_driver_bertha", "キャロウェイ", "BIG BERTHA（2023）", "—",
                 "キャロウェイ BIG BERTHA（2023） ドライバー", ["キャロウェイ|callaway", "bertha"], []),
-    DriverModel("yt_driver_brnr", "テーラーメイド", "BRNR mini", "—",
-                "テーラーメイド BRNR mini ドライバー", ["テーラーメイド|taylormade", "brnr"], [], category="mini"),
     DriverModel("yt_driver_50th", "コブラ", "AEROJET LS 50th Anniversary - Limited Ed", "—",
                 "コブラ AEROJET LS 50th Anniversary - Limited Edition ドライバー", ["50th"], []),
     DriverModel("yt_iron_jmh2", "マスダ", "JM-H2", "—",
