@@ -95,6 +95,10 @@ def load_watchlist() -> list[dict]:
         dedup = (r.get("category") or "", compact(r["label"]))
         if r["key"] not in by_key or dedup in seen:
             continue
+        # 中央値が世代混在の機種は「実売中央の◯%」が意味を持たないので通知しない
+        # （2026-08-13導入。catalog.mixed_median の説明を参照）
+        if by_key[r["key"]].mixed_median:
+            continue
         if med < MIN_MEDIAN or (r.get("sell_rate") or 0) < MIN_SELL_RATE:
             continue
         if r.get("sold", 0) < MIN_SOLD_30D and w7.get("sold", 0) < MIN_SOLD_7D:

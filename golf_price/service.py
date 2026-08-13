@@ -481,7 +481,9 @@ def run_catalog_model(m: DriverModel, pages: int = 2) -> dict:
         active = [l for l in active_raw if _flea_ok(l)]                    # 価格昇順
         # 販売中最安が「直近実売の中央値で売り直した手取り」を下回っていたら激アツ候補。
         # 実売3件以上ある機種だけ（相場の裏付けが薄いと誤検出するため）。
-        if len(sold) >= 3:
+        # 中央値が世代混在の機種は「中央値で売り直した手取り」が絵に描いた餅になる
+        # （2026-08-13導入。catalog.mixed_median の説明を参照）
+        if len(sold) >= 3 and not m.mixed_median:
             med = statistics.median([l.price for l in sold])
             for l in active[:MERCARI_ACTIVE_MIN]:
                 est = round(med * (1 - FEE_RATE) - SHIPPING - l.price)

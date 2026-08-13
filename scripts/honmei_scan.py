@@ -100,6 +100,12 @@ for i, key in enumerate(watch, 1):
     med = row["sold_price_median"]
     if not med:
         continue
+    # 中央値が世代混在で単一集団でない機種は割安率が意味を持たない
+    # （2026-08-12: P790 2019の5本が「中央比52%」で候補トップに来た）。
+    # 上の再集計は通してあるので回転（売れ数）はこの機種でも更新される
+    if m.mixed_median:
+        print("       ↑ 中央値が世代混在のため候補生成はスキップ（回転のみ更新）")
+        continue
     raw_by_id = {r2.get("id"): r2 for r2 in active_raw}
     for p in active:
         if p["created"] < since7 or p["head_only"]:
