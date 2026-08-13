@@ -44,6 +44,10 @@ auto-memory（honmei-genbutsu-check / flip-inventory）を必ず参照。
 - 転売判定と自分用判定は分けて書く。オークションは
   「実売中央×0.9 − 送料」から上限を先に決めて機械的に
 - 中央値が急変した機種はヘッド単品混入をまず疑う
+- **割安率がおかしい時は出品でなく分母（中央値）を疑う**。原因は3型:
+  ①ヘッド単品混入 ②excludes欠落で別ラインを吸収（8/11のCROSSOVER）
+  ③世代混在で中央値が二層の中間値になる（8/12のP790・T200）。
+  ③は `catalog.mixed_median=True` で候補生成から外す（回転は使えるので行は残す）
 - アイアンは回転（7日売れ数）を最優先。夏は原則手出し無用
 
 ## 部品単品との戦い（イタチごっこの記録）
@@ -51,8 +55,14 @@ auto-memory（honmei-genbutsu-check / flip-inventory）を必ず参照。
 検出は `golf_price/normalize.py`（タイトル: detect_head_only / is_parts_junk、
 説明文: detect_head_only_desc）。すり抜けを見つけたら:
 1. パターン/トークンを追加（誤検出側のテストも必ず書く — 完品を落とす方が痛い）
-2. `python -c` でテストしてから commit & push（クラウド集計も同じコードを使う）
-3. その日のメモの「教訓」と auto-memory に記録
+2. `python scripts/desc_corpus.py diff "<新パターン>"` で**完品コーパスに当てる**。
+   新パターンだけが拾う件＝誤検出候補が0件であること
+3. `python -c` でテストしてから commit & push（クラウド集計も同じコードを使う）
+4. その日のメモの「教訓」と auto-memory に記録
+
+**すり抜けだけでなく誤検出も定期的に測る**。`python scripts/desc_corpus.py check`
+で★の中身を目視する（8/13に完品のQi10 MAXを落としていたのを発見）。
+コーパスは `fetch "<検索語>" -n 12` で追記式に増やせる（多いほどテストが強くなる）。
 
 テキスト検出の限界: 説明文に何も書かないヘッド単品が実在するため、
 **購入判定の最終関門は常に写真のホーゼル目視**。
@@ -73,3 +83,6 @@ auto-memory（honmei-genbutsu-check / flip-inventory）を必ず参照。
 - 一時スクリプトはセッションの scratchpad でなくここ（scripts/）に育てて残す
 - ユーザーの仕入れ在庫と出口作戦は auto-memory の flip-inventory が台帳
 - 出品文作成は /shuppin スキル
+- カタログに行を足したら `catalog.find_duplicates()`（import時にも警告）で
+  条件重複がないか確認。自動生成の追加が既存キーと衝突しやすい
+  （8/13に42組84キーの完全重複を削除）
