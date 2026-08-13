@@ -634,8 +634,14 @@ CATALOG: list[DriverModel] = [
                 "コブラ F-MAX アイアン", ["コブラ|cobra", "fmax"], [], category="iron"),
     DriverModel("ir_hm_bezeal", "本間", "BeZEAL アイアン", "—",
                 "本間 BeZEAL アイアン", ["bezeal|ビジール"], [], category="iron"),
+    # RMXアイアンは世代だけでなく**モデル線**ごと混ざる（116/216/220/VD40/VD-X/DD-1/DD-2）。
+    # 2026-08-13実測: 116 FORGED 6本20,000・216 7本27,980・220 6本30,000／
+    # VD40 30,000〜38,197／VD-X 7本63,000・DD-1/DD-2(2026) 50,930〜69,771 で
+    # 中央27,750。RMX116の5本22,000が「79%」で候補入りしたが、
+    # 直近の116 FORGED 6本が20,000で成約済み＝実際は割高だった
     DriverModel("ir_ym_rmx", "ヤマハ", "RMX アイアン", "—",
-                "ヤマハ RMX アイアン", ["ヤマハ|yamaha", "rmx"], [], category="iron"),
+                "ヤマハ RMX アイアン", ["ヤマハ|yamaha", "rmx"], [], category="iron",
+                mixed_median=True),
     DriverModel("ir_onoff_kuro", "オノフ", "KURO（黒）アイアン", "—",
                 "オノフ KURO 黒 アイアン", ["オノフ|onoff", "kuro|黒"], [], category="iron"),
     # 地クラブ・超高反発（おもしろニッチ）
@@ -1039,8 +1045,14 @@ CATALOG: list[DriverModel] = [
                 "プロギア SUPER egg (2024） フェアウェイウッド", ["プロギア|prgr", "super"], [], category="fw"),
     DriverModel("yt_driver_ufo", "キャスコ", "UFO AIR D ＆ UFO AIR DD", "—",
                 "キャスコ UFO AIR D ＆ UFO AIR DD ドライバー", ["キャスコ|kasco", "ufo"], []),
+    # X FORGEDは2007〜2026の19年分＋派生(CB/STAR/MAX)が1キーに入る。
+    # 2026-08-13実測: 旧世代(2007〜2013) 15,000〜29,800／新世代(2021〜2026)
+    # 36,200〜96,000／CB 31,000〜36,600・STAR 2024 71,000〜79,760 で中央37,100。
+    # 2007年6本19,800が「53%」で候補トップに来たが、同構成(5-P)が同日19,800で
+    # 成約しており**市場価格そのもの**だった
     DriverModel("yt_iron_xforged", "キャロウェイ", "X FORGED", "—",
-                "キャロウェイ X FORGED アイアン", ["キャロウェイ|callaway", "xforged"], [], category="iron"),
+                "キャロウェイ X FORGED アイアン", ["キャロウェイ|callaway", "xforged"], [],
+                category="iron", mixed_median=True),
     DriverModel("yt_ut_stmax230", "ミズノ", "ST-MAX 230", "—",
                 "ミズノ ST-MAX 230 ユーティリティ", ["ミズノ|mizuno", "stmax230"], [], category="ut"),
     DriverModel("yt_fw_stmax230", "ミズノ", "ST-MAX 230", "—",
