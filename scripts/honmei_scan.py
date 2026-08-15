@@ -125,6 +125,9 @@ for i, key in enumerate(watch, 1):
             "w7_sold": w7["sold"], "w7_active": w7["active"],
             "sell_rate": row["sell_rate"],
             "auction": bool(raw.get("auction")),
+            # 着払い＝送料は購入者負担。表示価格が実質より安く見えるので印を付ける
+            # （2026-08-15: LINE通知のQi10 MAX 17,800円が着払いで実質約2万円だった）
+            "shipping_buyer": str(raw.get("shippingPayerId") or "") == "1",
         })
 
 if fresh_rows:
@@ -145,7 +148,8 @@ with open(OUT_PATH, "w", encoding="utf-8") as f:
 print(f"\n一次候補 {len(cands)} 件 → {OUT_PATH}")
 for c in cands:
     au = " 🔨オークション" if c["auction"] else ""
+    sb = " 📦着払い" if c.get("shipping_buyer") else ""
     print(f"  {c['label']} ¥{c['price']:,} ({c['ratio']:.0%}) 状態{c['cond']} "
-          f"{c['age_h']}h前 7日{c['w7_sold']}本{au} | {c['title'][:38]}")
+          f"{c['age_h']}h前 7日{c['w7_sold']}本{au}{sb} | {c['title'][:38]}")
 if errors:
     print("失敗:", errors)

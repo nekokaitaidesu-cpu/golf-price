@@ -141,6 +141,10 @@ def scan_model(entry: dict, since: float) -> list[dict]:
             # オークション形式（入札制）。即決購入できないので通知に明記する
             # （2026-07-09: SIM2がオークションだと知らずに通知してしまった）
             "auction": bool(raw.get("auction")),
+            # 着払い（購入者が送料負担）。表示価格が実質より安く見えるので明記する
+            # （2026-08-15: Qi10 MAX 17,800円の通知が着払いで実質2万円だった。
+            #   買い判断は正しかったが、表示価格のまま%を出すのは過大評価になる）
+            "shipping_buyer": str(raw.get("shippingPayerId") or "") == "1",
         })
     return out
 
@@ -200,6 +204,9 @@ def save_state(state: dict) -> None:
 
 SHIPPING_EST = 1850    # 想定送料（クラブ1本・ヤマト160相当）
 FEE_RATE = 0.10        # メルカリ手数料
+# 着払い出品を買ったときに自分が窓口で払う送料の概算（ヤマト160・距離により変動）。
+# 2026-08-15: 17,800円の着払い個体が実際は約20,000円だったという実例に合わせた
+SHIPPING_BUYER_EST = 2000
 
 
 def format_alert(a: dict) -> str:
@@ -209,10 +216,16 @@ def format_alert(a: dict) -> str:
     # 中央値で売り直した場合の概算利益。スマホで通知を見た瞬間に
     # 「買う/見送る」を決められるように（2026-07-14: ROGUE ST 13,500円が
     # 12分×2回で消え、判断時間が足りなかった反省から）
-    est = round(a["median"] * (1 - FEE_RATE) - SHIPPING_EST - a["price"])
+    # 着払いは自分が送料を払うので、仕入れ値は「表示価格＋着払い送料」で見る
+    cost = a["price"] + (SHIPPING_BUYER_EST if a.get("shipping_buyer") else 0)
+    est = round(a["median"] * (1 - FEE_RATE) - SHIPPING_EST - cost)
     profit = (f"\n💰中央値で売り直し想定 {est:+,}円"
               f"（手数料10%・送料{SHIPPING_EST:,}円試算）" if est >= 1500 else "")
     warns = profit
+    if a.get("shipping_buyer"):
+        warns += (f"\n📦着払い（送料は購入者負担）→ 実質 約¥{cost:,}"
+                  f"・中央比{cost / a['median']:.0%}"
+                  f"（送料{SHIPPING_BUYER_EST:,}円概算）")
     tag = loft_tag(a["title"])
     if tag:
         warns += f"\n📏番手 {tag}（FW/UTは番手で相場が別物、番手別の実売と比較を）"
