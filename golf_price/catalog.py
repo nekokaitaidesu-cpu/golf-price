@@ -517,8 +517,14 @@ CATALOG: list[DriverModel] = [
                 "キャロウェイ APEX PRO アイアン", ["apexpro"], [], category="iron"),
     DriverModel("ir_cw_rogue", "キャロウェイ", "ROGUE アイアン", "2018",
                 "キャロウェイ ROGUE アイアン", ["rogue"], ["roguest", "smoke"], category="iron"),
+    # 2026-08-15: yt_iron_xforged にだけ mixed_median を付けていたが、**同じ機種の
+    # キーがもう1つあった**（required が ["xforged"] と ["キャロウェイ|callaway","xforged"]
+    # で微妙に違うため find_duplicates では重複扱いにならない）。8/15はこちら側から
+    # 「RAZR X FORGED アイアンセット 19,000円（中央38,000の50%）」が候補入りした。
+    # RAZR X FORGED は2011年モデルで、2021〜2026年モデルと同じ分母で見てはいけない
     DriverModel("ir_cw_xforged", "キャロウェイ", "X FORGED", "2018",
-                "キャロウェイ X FORGED アイアン", ["xforged"], [], category="iron"),
+                "キャロウェイ X FORGED アイアン", ["xforged"], [], category="iron",
+                mixed_median=True),
     DriverModel("ir_cw_mavrik", "キャロウェイ", "MAVRIK アイアン", "2020",
                 "キャロウェイ MAVRIK アイアン", ["mavrik"], [], category="iron"),
     # --- 名機アイアン：ミズノ ---
