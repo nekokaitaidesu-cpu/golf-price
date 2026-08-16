@@ -1332,8 +1332,15 @@ CATALOG: list[DriverModel] = [
                 "テーラーメイド ステルス プラス フェアウェイウッド", ["テーラーメイド|taylormade", "ステルスプラス"], [], category="fw"),
     DriverModel("yt_driver_x6", "テーラーメイド", "ステルス プラス", "—",
                 "テーラーメイド ステルス プラス ドライバー", ["テーラーメイド|taylormade", "ステルスプラス"], []),
+    # 2026-08-16: excludes が空で**ステルス系10機種を全部飲み込んでいた**
+    # （Plus / HD / 2 / 2Plus / 2HD / グローレ+）。実売サンプル10件のうち
+    # 無印ステルス完品は2件だけで、中央16,600は「ステルス系ごちゃ混ぜ」の数字だった。
+    # 英字トークンの手書き版 tm_stealth は excludes=['stealth2','plus','hd'] を
+    # 持っていたのに、カタカナ版のこちらだけ素通りだった。
+    # ステルスグローレは国内専用の別ライン（価格帯も別）なので併せて除外する
     DriverModel("yt_driver_x7", "テーラーメイド", "ステルス", "—",
-                "テーラーメイド ステルス ドライバー", ["テーラーメイド|taylormade", "ステルス"], []),
+                "テーラーメイド ステルス ドライバー", ["テーラーメイド|taylormade", "ステルス"],
+                ["ステルス2|stealth2", "プラス|plus", "グローレ|gloire", "hd"]),
     DriverModel("yt_driver_hd", "テーラーメイド", "ステルス HD", "—",
                 "テーラーメイド ステルス HD ドライバー", ["テーラーメイド|taylormade", "ステルスhd"], []),
     DriverModel("yt_iron_cc", "ロッディオ", "CC フォージド", "—",
@@ -1785,6 +1792,30 @@ CATALOG: list[DriverModel] = [
 ]
 
 CATALOG_BY_KEY = {m.key: m for m in CATALOG}
+
+
+def find_swallowing() -> list[tuple[str, str]]:
+    """「AがBを飲み込む」関係のキー対を返す（(飲み込む側, 飲まれる側)）。
+
+    find_duplicates() は**完全一致**しか見つけられないが、実際に相場を汚すのは
+    「Aの条件がBより緩く、Bの出品までAに入ってしまう」形の方が多い。
+    例（2026-08-16発見）: `yt_driver_x7`（required=['テーラーメイド','ステルス']・
+    excludes=[]）が **ステルスプラス / ステルスHD / ステルス2 / ステルスグローレ** を
+    全部吸っており、実売サンプル10件中「無印ステルス完品」は2件だけだった。
+    中央値16,600はステルス系ごちゃ混ぜの数字になっていた。
+
+    判定はシンプルに「BのkeywordがAにマッチするか」。B自身の名前でAが反応するなら、
+    Bの出品はAにも入る。同カテゴリ同士だけを見る。
+    """
+    from .service import _catalog_match
+    out: list[tuple[str, str]] = []
+    for a in CATALOG:
+        for b in CATALOG:
+            if a is b or a.category != b.category or a.brand != b.brand:
+                continue
+            if _catalog_match(b.keyword, a) and not _catalog_match(a.keyword, b):
+                out.append((a.key, b.key))
+    return out
 
 
 def find_duplicates() -> list[list[str]]:
