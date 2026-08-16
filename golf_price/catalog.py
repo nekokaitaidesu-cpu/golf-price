@@ -1596,9 +1596,15 @@ CATALOG: list[DriverModel] = [
     # ※既存のミニドラ（GT280 / BRNR / R7 Quad / 300 MINI / オリジナルワン /
     #   QUANTUM MINI / Ai SMOKE Ti 340 MINI / MAZEL / ドライブスターSteady）は
     #   各ブランド節に置いたまま category="mini" を付けて移動済み
+    # 2026-08-15/16に2日連続で偽の割安（73%・24,800円）を出した個体を止める。
+    # 正体は「短尺43.75インチ **マーベリック12°**＋エリートミニドラ**純正**TENSEI60S」＝
+    # **他機種のヘッド＋この機種の純正シャフト**の組み合わせ出品で、
+    # タイトルに両方のモデル名が入るためマッチしてしまっていた。
+    # 実際のELYTE Mini完品は販売中最安33,000（実売29,500〜33,500）で割安ではない
     DriverModel("mn_cw_elyte_mini", "キャロウェイ", "ELYTE Mini", "2025",
                 "キャロウェイ ELYTE ミニ ドライバー",
-                ["elyte|エリート", "mini|ミニ"], ["elytex|エリートx"], category="mini"),
+                ["elyte|エリート", "mini|ミニ"],
+                ["elytex|エリートx", "マーベリック|mavrik"], category="mini"),
     # ヤマハ Steady Version = 43.5インチ短尺のネット販売限定モデル。
     # ショップ中古（楽天/ゴルパ）にほぼ出ず個人間フリマ専売なので価格が読まれにくい
     DriverModel("mn_ym_rmxvdm_steady", "ヤマハ", "RMX VD/M Steady Version", "2023",
