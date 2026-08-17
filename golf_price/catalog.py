@@ -384,8 +384,12 @@ CATALOG: list[DriverModel] = [
     DriverModel("ir_ti_t200", "タイトリスト", "T200", "2023",
                 "タイトリスト T200 アイアン", ["t200"], [], category="iron",
                 mixed_median=True),
+    # 2026-08-17: 「SRIXON zx585 アイアンセット 40,000円」が中央55,000の73%で
+    # 候補入りした。zx585 は存在しないモデル名で、**Z585（2018・中央36,000）の
+    # 打ち間違い**と見られる。"zx5" が "zx585" に部分一致してしまうため除外する
+    # （Z585側の required に zx585 を足して受け皿にした）
     DriverModel("ir_sx_zx5", "スリクソン", "ZX5 アイアン", "2021",
-                "スリクソン ZX5 アイアン", ["zx5"], ["mk"], category="iron"),
+                "スリクソン ZX5 アイアン", ["zx5"], ["mk", "zx585"], category="iron"),
     DriverModel("ir_sx_zx5mk2", "スリクソン", "ZX5 MkII アイアン", "2023",
                 "スリクソン ZX5 MkII アイアン", ["zx5mk"], [], category="iron"),
     DriverModel("ir_mz_jpx923", "ミズノ", "JPX923", "2022",
@@ -484,8 +488,9 @@ CATALOG: list[DriverModel] = [
                 "スリクソン Z565 アイアン", ["z565"], [], category="iron"),
     DriverModel("ir_sx_z765", "スリクソン", "Z765", "2016",
                 "スリクソン Z765 アイアン", ["z765"], [], category="iron"),
+    # "zx585" は存在しないモデル名で Z585 の打ち間違い。ZX5側から除外した分の受け皿
     DriverModel("ir_sx_z585", "スリクソン", "Z585", "2018",
-                "スリクソン Z585 アイアン", ["z585"], [], category="iron"),
+                "スリクソン Z585 アイアン", ["z585|zx585"], [], category="iron"),
     DriverModel("ir_sx_z785", "スリクソン", "Z785", "2018",
                 "スリクソン Z785 アイアン", ["z785"], [], category="iron"),
     DriverModel("ir_sx_zx7", "スリクソン", "ZX7", "2021",
@@ -1225,8 +1230,13 @@ CATALOG: list[DriverModel] = [
                 "タイトリスト TSR3 フェアウェイウッド", ["tsr3"], [], category="fw"),
     DriverModel("yt_iron_zx4", "スリクソン", "ZX4 Mk II", "—",
                 "スリクソン ZX4 Mk II アイアン", ["スリクソン|srixon", "zx4"], [], category="iron"),
+    # ⚠ラベルは「ZX5 Mk II」だが required は "zx5"（無印）＝実体は catch-all。
+    # 本物のMkIIは ir_sx_zx5mk2（req="zx5mk"・30日4本）が持つ。30日1本しかなく
+    # ir_sx_zx5（30日11本）と実質二重なので将来は削除候補。
+    # 当面は無印ZX5と同じ除外を入れて汚染だけ止める（2026-08-17）
     DriverModel("yt_iron_zx5", "スリクソン", "ZX5 Mk II", "—",
-                "スリクソン ZX5 Mk II アイアン", ["スリクソン|srixon", "zx5"], [], category="iron"),
+                "スリクソン ZX5 Mk II アイアン", ["スリクソン|srixon", "zx5"],
+                ["zx585"], category="iron"),
     DriverModel("yt_fw_maruman", "マジェスティ", "maruman SHUTTLE", "—",
                 "マジェスティ maruman SHUTTLE フェアウェイウッド", ["マジェスティ|majesty", "maruman"], [], category="fw"),
         DriverModel("yt_fw_amx", "ロイヤルコレクション", "AM-X", "—",
