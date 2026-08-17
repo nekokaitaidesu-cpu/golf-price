@@ -352,8 +352,11 @@ CATALOG: list[DriverModel] = [
                 "ゼクシオ12 ユーティリティ", ["xxio12|ゼクシオ12"], [], category="ut"),
     DriverModel("ut_mz_flihi", "ミズノ", "Fli-Hi / ST UT", "2022",
                 "ミズノ ユーティリティ", ["ミズノ|mizuno", "stz|stx|flihi"], [], category="ut"),
-    DriverModel("ut_ti_tsr", "タイトリスト", "TSR ユーティリティ", "2022",
-                "タイトリスト TSR ユーティリティ", ["tsr"], ["tsr1", "tsr2", "tsr3"], category="ut"),
+    # ut_ti_tsr「TSR ユーティリティ」は 2026-08-17 に削除。TSR UTには無印が存在せず
+    # TSR1/2/3 のみ。8/16に TSR1/2/3 を除外した結果、実売0本・販売中0本の
+    # ゾンビキーになった（除外前の「30日31本」は飲み込みが作った数字）。
+    # 実体は yt_ut_tsr2（30日20本）/ yt_ut_tsr1 / yt_ut_tsr3 が受け持つ。
+    # ※FW側の fw_ti_tsr は受け皿が実売1本ずつしかないため mixed_median で残してある
 
     # ==================== アイアン ====================
     DriverModel("ir_tm_p790", "テーラーメイド", "P790", "2023",
