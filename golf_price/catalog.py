@@ -1600,8 +1600,13 @@ CATALOG: list[DriverModel] = [
                 ["elytex|エリートx", "マーベリック|mavrik"], category="mini"),
     # ヤマハ Steady Version = 43.5インチ短尺のネット販売限定モデル。
     # ショップ中古（楽天/ゴルパ）にほぼ出ず個人間フリマ専売なので価格が読まれにくい
+    # ⚠2026-08-19: 検索KWが「ヤマハ RMX VD ドライバー」だと**Steady版をほとんど拾えず**、
+    # 販売中が0件と出ていた（実際は5件あり、最安19,800も生きていた）。
+    # required は正しいのに**KWの recall が足りず在庫ゼロと誤診**した実例。
+    # 「Steady」を含むKWに変更（同じKWで実測5件を確認済み）。
+    # → 教訓: 販売中0件を見たら、まずKWを変えて取りこぼしでないか確かめる
     DriverModel("mn_ym_rmxvdm_steady", "ヤマハ", "RMX VD/M Steady Version", "2023",
-                "ヤマハ RMX VD ドライバー",
+                "ヤマハ RMX VD/M Steady",
                 ["rmx", "steady|ステディ|短尺|43.5"], [], category="mini"),
 
     # ==================== チッパー ====================
