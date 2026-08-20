@@ -89,7 +89,13 @@ def _aggregate(sold: list[dict], active: list[dict], truncated: bool,
     days_median = round(statistics.median(days), 1) if days else None
     full_sold = [x["price"] for x in sold if not x["head_only"]]
     sold_price_median = round(statistics.median(full_sold)) if full_sold else None
-    active_min = min((x["price"] for x in active), default=None)
+    # 2026-08-20修正: 中央値はヘッド単品を除いているのに、active_min は除いておらず
+    # **非対称**だった。その結果「販売中最安 ÷ 実売中央」の割安率が、
+    # ヘッド単品が作った最安で計算されて偽陽性を量産していた
+    # （G425 LSTは安値5件が全部ヘッド単品で「67%」、TSi3は5件中4件で「61%」）。
+    # 完品同士で比べるため、active_min も完品だけで取る
+    full_active = [x["price"] for x in active if not x["head_only"]]
+    active_min = min(full_active, default=None)
     # 直近に売れた順のサンプル（ページで「何がいくらで売れたか」を見せる用）
     samples = sorted(sold, key=lambda x: -x["updated"])[:5]
     return {
