@@ -268,6 +268,8 @@ CLUB_TOKENS = {
     # 緩めても機種側 required で番手(7W/9W)を必須にしているので他番手は入らない
     "shortwood": ["フェアウェイ", "フェアウエイ", "fairway", "ウッド", "wood",
                   "ショートウッド", "7w", "9w", "w7", "w9"],
+    "wedge": ["ウェッジ", "wedge"],
+    "putter": ["パター", "putter"],
 }
 # 種別語が重なっても除外し合わないカテゴリ（mini の商品名は「◯◯ドライバー」なので
 # driver 語で弾いてはいけない。FW/UT/アイアン等との相互除外は従来どおり効かせる）
@@ -280,8 +282,13 @@ _CLUB_COMPATIBLE = {"mini": {"driver"}, "driver": {"mini"},
 # （2026-08-21: 導入時にドライバーのキー4件が自分のkeywordにすら
 #   マッチしなくなる退行を出した。shortwood側の除外は従来どおり効かせる）
 _NON_EXCLUSIVE_CATEGORIES = {"shortwood"}
-# どのカテゴリでも除外したい別クラブ種別
-_ALWAYS_EXCLUDE_CLUB = ["ウェッジ", "wedge", "パター", "putter"]
+# どのカテゴリでも除外したい別クラブ種別。
+# 2026-08-22: ウェッジ・パターを部門として持つことにしたので、この固定リストから外し、
+# 上の CLUB_TOKENS に載せて**通常のカテゴリ間相互除外に任せる**。
+# 効果は同じ（driver/fw/ut/iron からは今までどおり弾かれる）うえ、
+# wedge/putter 自身が自分を弾いてしまう問題が起きない。
+# chipper は従来どおりこのブロック自体をスキップする（「パター型チッパー」等のため）
+_ALWAYS_EXCLUDE_CLUB: list[str] = []
 
 
 def _term_hit(term: str, c: str, n: str) -> bool:

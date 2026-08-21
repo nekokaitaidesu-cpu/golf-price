@@ -72,6 +72,13 @@ CATEGORIES = [
     # 3W/5Wと同等（中央4〜6日）で、**高い・薄い・でも回る**という独立した需給を持つ。
     # fw に混ぜると中央値が番手混在になるため部門を分ける（2026-08-21）
     ("shortwood", "ショートウッド(7W/9W)"),
+    # ウェッジ・パター（2026-08-22新設）。ユーザー指示は「値持ちする人気モデルに絞る」
+    # 「送料に負けない価格帯」。**90日の実売を実測し、実売中央が10,000円未満の機種は
+    # 採用していない**（送料1,450＋手数料10%を引くと粗利が残らないため）。
+    # 除外例: ボーケイSM8(8,000) / SM7(6,750) / JAWS RAW(8,000) /
+    #        RTX ZipCore(7,500) / Glide4.0(8,800) / ミズノT24(8,000)
+    ("wedge", "ウェッジ"),
+    ("putter", "パター"),
 ]
 CATEGORY_LABEL = dict(CATEGORIES)
 
@@ -83,6 +90,10 @@ CATEGORY_LABEL = dict(CATEGORIES)
 #   ② 素の部分一致だと '17w' が '7w' に、'121度' が '21度' に誤ヒットする
 _SW_NUM = ("=7w|=w7|=7番|=20.5|=21度|=21°"
            "|=9w|=w9|=9番|=23.5|=24度|=24°")
+# ウェッジ・パター部門の共通除外。ウェッジは「52度58度 2本セット」のような
+# 複数本まとめ売りが多く、1本あたりの相場を壊す（中央値が上振れする）
+_WP_EXC = ["本セット", "セット売り"]
+
 # 複数本セットは1本あたりの相場を壊すので除外（中央値が上振れする）。
 # 2026-08-21の初回ライブ集計で、G425の完品実売が
 # 「名器！G425フェアウェイウッド**5w.7w.9wセット** 70,000円」の**1件だけ**になり、
@@ -1886,6 +1897,121 @@ CATALOG: list[DriverModel] = [
     DriverModel("sw_ti_gt2", "タイトリスト", "GT2 7W/9W", "2024",
                 "タイトリスト GT2 フェアウェイウッド",
                 ["=gt2", _SW_NUM], _SW_EXC, category="shortwood"),
+
+    # ==================== ウェッジ ====================
+    # 2026-08-22新設。**90日実売を実測し、中央10,000円以上かつ実売8本以上**だけ採用。
+    # 実測値（90日・実売本数/中央値/販売中/売れるまでの日数）:
+    #   SM10 35本 14,800 (13販売中・7.2日) / s159 27本 10,700 / RTX6 21本 16,000 /
+    #   SM9 19本 11,000 (4.6日=最速) / MG4 17本 11,900 / JAWS MD5 14本 10,740 /
+    #   OPUS 13本 10,000 / MG3 12本 13,600
+    # 次点（数は出るが中央が10,000未満で送料負けする）: SM8 23本8,000 /
+    #   JAWS RAW 17本8,000 / RM-4 16本7,100 / RTX ZipCore 13本7,500 / Glide4.0 13本8,800
+    DriverModel("wg_ti_sm10", "タイトリスト", "ボーケイ SM10", "2024",
+                "タイトリスト ボーケイ SM10 ウェッジ", ["sm10"], _WP_EXC, category="wedge"),
+    DriverModel("wg_ti_sm9", "タイトリスト", "ボーケイ SM9", "2022",
+                "タイトリスト ボーケイ SM9 ウェッジ", ["sm9"], _WP_EXC, category="wedge"),
+    DriverModel("wg_cl_rtx6", "クリーブランド", "RTX6 ZipCore", "2023",
+                "クリーブランド RTX6 ZipCore ウェッジ", ["rtx6"], _WP_EXC, category="wedge"),
+    DriverModel("wg_ping_s159", "ピン", "s159", "2024",
+                "ピン s159 ウェッジ", ["s159"], _WP_EXC, category="wedge"),
+    DriverModel("wg_tm_mg4", "テーラーメイド", "ミルドグラインド4", "2024",
+                "テーラーメイド ミルドグラインド4 ウェッジ",
+                ["テーラーメイド|taylormade", "mg4|ミルドグラインド4"], _WP_EXC,
+                category="wedge"),
+    DriverModel("wg_tm_mg3", "テーラーメイド", "ミルドグラインド3", "2022",
+                "テーラーメイド ミルドグラインド3 ウェッジ",
+                ["テーラーメイド|taylormade", "mg3|ミルドグラインド3"], _WP_EXC,
+                category="wedge"),
+    DriverModel("wg_cw_md5", "キャロウェイ", "JAWS MD5", "2019",
+                "キャロウェイ MD5 JAWS ウェッジ",
+                ["md5|マックダディ5"], _WP_EXC, category="wedge"),
+    DriverModel("wg_cw_opus", "キャロウェイ", "OPUS", "2024",
+                "キャロウェイ OPUS ウェッジ",
+                ["キャロウェイ|callaway", "opus|オーパス"], _WP_EXC, category="wedge"),
+
+    # ==================== パター ====================
+    # 2026-08-22新設。**パターはカバー単品それ自体が2,000〜25,000円で売買される**ため、
+    # normalize.py にカバー/グリップ単品の検出を入れてから採用値を測り直している
+    # （スペシャルセレクトは中央 4,250円 → 28,250円 に是正された）。
+    # 実測値（90日・実売本数/中央値）:
+    #   Spider GT 48本 14,800 / Spider Tour 46本 30,000 / フューチュラ 42本 18,000 /
+    #   トゥーロン 35本 24,000 / DF3 35本 60,000 / ファントムX 28本 29,750 /
+    #   ファントム 24本 46,000 / ホワイトホットOG 24本 14,250 /
+    #   PLD Milled 16本 29,050 / トライホット5K 16本 13,890 / シグマ2 14本 10,500 /
+    #   Mezz.1 12本 52,500 / スペシャルセレクト 6本 28,250
+    # **不採用: ピン「アンサー」の総称キー**。実測41本・中央11,500だが、中身が
+    # ヴィンテージのカーステン期(2,900〜8,000)・シグマ2アンサー(7,000)・
+    # PLD Milled アンサー(33,000〜38,000)の**三層**で、mixed_median の典型だった。
+    # ライン別（PLD Milled / Sigma2）で持つ方が正しいので総称キーは作らない。
+    # 不採用（薄すぎ）: Spider X 5本 / 2ボール 4本 / Ai-ONE 1本
+    DriverModel("pt_sc_specialselect", "スコッティキャメロン", "スペシャルセレクト", "2020",
+                "スコッティキャメロン スペシャルセレクト パター",
+                ["specialselect|スペシャルセレクト"], _WP_EXC, category="putter"),
+    DriverModel("pt_sc_superselect", "スコッティキャメロン", "スーパーセレクト", "2023",
+                "スコッティキャメロン スーパーセレクト パター",
+                ["superselect|スーパーセレクト"], _WP_EXC, category="putter"),
+    # 旧フューチュラにも「ファントムマレット」の名を持つ個体があり、初回集計で
+    # 「フューチュラ ファントムマレット2 7,500円」を吸って割安率26%の偽陽性を作った
+    # （他16件は39,000〜118,000）。フューチュラ側のキーで数えるのが正しい
+    DriverModel("pt_sc_phantom", "スコッティキャメロン", "ファントム", "2024",
+                "スコッティキャメロン ファントム パター",
+                ["phantom|ファントム"],
+                _WP_EXC + ["phantomx|ファントムx", "futura|フューチュラ"],
+                category="putter"),
+    DriverModel("pt_sc_phantomx", "スコッティキャメロン", "ファントムX", "2019",
+                "スコッティキャメロン ファントムX パター",
+                ["phantomx|ファントムx"], _WP_EXC, category="putter"),
+    DriverModel("pt_sc_futura", "スコッティキャメロン", "フューチュラ", "2017",
+                "スコッティキャメロン フューチュラ パター",
+                ["futura|フューチュラ"], _WP_EXC, category="putter"),
+    # ニューポートは「形状名」でスペシャル/スーパー/ファントム各ラインの中にも現れる。
+    # ライン名を持つ個体はそちらのキーで数えるため、ここは**それ以外の受け皿**にする
+    # （二重計上の防止。find_swallowing は keyword 同士しか見ないので自動検出できない）
+    DriverModel("pt_sc_newport", "スコッティキャメロン", "ニューポート（その他ライン）", "—",
+                "スコッティキャメロン ニューポート2 パター",
+                ["newport|ニューポート"],
+                _WP_EXC + ["specialselect|スペシャルセレクト",
+                           "superselect|スーパーセレクト", "studioselect|スタジオセレクト",
+                           "phantom|ファントム", "futura|フューチュラ"],
+                category="putter"),
+    DriverModel("pt_od_whitehotog", "オデッセイ", "ホワイトホット OG", "2021",
+                "オデッセイ ホワイトホット OG パター",
+                ["whitehotog|ホワイトホットog"], _WP_EXC, category="putter"),
+    DriverModel("pt_od_toulon", "オデッセイ", "トゥーロン", "2019",
+                "オデッセイ トゥーロン パター",
+                ["toulon|トゥーロン"], _WP_EXC, category="putter"),
+    DriverModel("pt_od_trihot5k", "オデッセイ", "トライホット 5K", "2022",
+                "オデッセイ トライホット 5K パター",
+                ["trihot|トライホット"], _WP_EXC, category="putter"),
+    # 世代で二層に割れていたので分ける（初回集計の実売42件を実測）:
+    #   無印スパイダーツアー(2017 RED/BLACK/TM1/TM2) = 8,000〜33,000
+    #   スパイダーツアーX(2022〜)                  = 23,000〜60,000
+    # 中央30,000は「どちらの世代でもない中間値」だった。アイアンの世代混在と違い
+    # **両層とも30日でn≈21あるので、mixed_medianにせず分割できる**
+    DriverModel("pt_tm_spidertourx", "テーラーメイド", "スパイダー ツアーX", "2022",
+                "テーラーメイド スパイダー ツアーX パター",
+                ["spidertourx|スパイダーツアーx"], _WP_EXC, category="putter"),
+    DriverModel("pt_tm_spidertour", "テーラーメイド", "スパイダー ツアー（無印）", "2017",
+                "テーラーメイド スパイダー ツアー パター",
+                ["spidertour|スパイダーツアー"],
+                _WP_EXC + ["spidertourx|スパイダーツアーx"], category="putter"),
+    DriverModel("pt_tm_spidergt", "テーラーメイド", "スパイダー GT", "2022",
+                "テーラーメイド スパイダー GT パター",
+                ["spidergt|スパイダーgt"], _WP_EXC, category="putter"),
+    DriverModel("pt_ping_pld", "ピン", "PLD Milled", "2022",
+                "ピン PLD ミルド パター", ["pld"], _WP_EXC, category="putter"),
+    DriverModel("pt_ping_sigma2", "ピン", "シグマ2", "2018",
+                "ピン シグマ2 パター", ["sigma2|シグマ2"], _WP_EXC, category="putter"),
+    DriverModel("pt_lab_df3", "L.A.B. GOLF", "DF3", "2024",
+                "L.A.B. GOLF DF3 パター", ["df3"], _WP_EXC, category="putter"),
+    DriverModel("pt_lab_mezz1", "L.A.B. GOLF", "Mezz.1 MAX", "2022",
+                "L.A.B. GOLF Mezz.1 MAX パター", ["mezz"], _WP_EXC, category="putter"),
+    # ベティナルディはモデル数が多く単価が5,000〜300,000と大きく割れる（限定モデルが
+    # 混ざる）。回転は使えるので行は残し、**割安率による候補生成だけ止める**
+    DriverModel("pt_bettinardi", "ベティナルディ", "BETTINARDI（総称）", "—",
+                "ベティナルディ パター",
+                ["ベティナルディ|bettinardi"], _WP_EXC, category="putter",
+                mixed_median=True),
 ]
 
 CATALOG_BY_KEY = {m.key: m for m in CATALOG}
