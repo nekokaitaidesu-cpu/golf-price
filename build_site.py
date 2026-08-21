@@ -51,7 +51,10 @@ def _model_entry(m, d: dict) -> dict:
         "used_min_head_only": cheapest.get("head_only", False),
         "used_samples": (d.get("used_samples") or [])[:8],
         "flea_samples": (d.get("flea_samples") or [])[:8],
-        "mercari_hot": (d.get("mercari_hot") or [])[:2],
+        # アイアンは激アツから除外（2026-08-22 ユーザー指示）。生成元でも止めているが、
+        # 既存キャッシュに残っている分をここでも落とす（mobile はこの配列から組む）
+        "mercari_hot": ([] if m.category == service.HOT_EXCLUDE_CATEGORY
+                        else (d.get("mercari_hot") or [])[:2]),
         "fetched_at": d.get("_fetched_at", ""),
     }
 

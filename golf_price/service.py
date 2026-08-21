@@ -251,6 +251,10 @@ def _run_user_model(entry: dict, pages: int) -> dict:
     }
 
 
+# 🔥メルカリ激アツから丸ごと外すカテゴリ（2026-08-22 ユーザー指示）。
+# 生成元（_fetch_sold）・API（/api/hot）・静的サイト（build_site.py）の3か所で参照する
+HOT_EXCLUDE_CATEGORY = "iron"
+
 # カテゴリごとの「クラブ種別」を示す語（いずれか含む必要）
 CLUB_TOKENS = {
     "driver": ["ドライバー", "driver"],
@@ -505,7 +509,10 @@ def run_catalog_model(m: DriverModel, pages: int = 2) -> dict:
         # 実売3件以上ある機種だけ（相場の裏付けが薄いと誤検出するため）。
         # 中央値が世代混在の機種は「中央値で売り直した手取り」が絵に描いた餅になる
         # （2026-08-13導入。catalog.mixed_median の説明を参照）
-        if len(sold) >= 3 and not m.mixed_median:
+        # **アイアンは2026-08-22にユーザー指示で激アツから丸ごと除外**。
+        # セットの本数（5本/6本/7本）とシャフト違いで1本あたりの価値が変わるため、
+        # 「中央値で売り直す」前提がそもそも成り立たず、割安に見えても実体がない
+        if len(sold) >= 3 and not m.mixed_median and m.category != HOT_EXCLUDE_CATEGORY:
             med = statistics.median([l.price for l in sold])
             for l in active[:MERCARI_ACTIVE_MIN]:
                 est = round(med * (1 - FEE_RATE) - SHIPPING - l.price)

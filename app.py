@@ -114,6 +114,10 @@ def api_hot(category: str = Query("")):
     for m in CATALOG:
         if category and m.category != category:
             continue
+        # アイアンは激アツから除外（2026-08-22 ユーザー指示）。生成元でも止めているが、
+        # 既存キャッシュに残っている分をここでも落とす
+        if m.category == service.HOT_EXCLUDE_CATEGORY:
+            continue
         d = cache.get(f"{m.key}_p2", ttl=10 ** 9)
         if not d:
             continue
