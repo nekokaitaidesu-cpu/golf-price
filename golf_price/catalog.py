@@ -66,8 +66,33 @@ CATEGORIES = [
     # ミニドライバー＋短尺(43.5インチ級)ドライバー。本数は少ないが単価が高く
     # 「通常品と同じ値付けで出される」ミスが起きやすいので独立部門にする（2026-08-09）
     ("mini", "ミニドラ・短尺"),
+    # ショートウッド(7W/9W)。2026-08-21実測で、同一機種内の 7W中央 ÷ 5W中央 が
+    # **10機種すべて1.0超（中央1.23倍）**、販売中/実売の比も 5W 0.75 に対し
+    # 7W 0.59 / 9W 0.41 と番手が上がるほど品薄。しかも売れるまでの日数は
+    # 3W/5Wと同等（中央4〜6日）で、**高い・薄い・でも回る**という独立した需給を持つ。
+    # fw に混ぜると中央値が番手混在になるため部門を分ける（2026-08-21）
+    ("shortwood", "ショートウッド(7W/9W)"),
 ]
 CATEGORY_LABEL = dict(CATEGORIES)
+
+
+# ---- ショートウッド(7W/9W)部門の共通条件 -----------------------------------
+# 番手の書き方は「7W」「W7」「7番」＋ロフト直打ち（7W=20.5/21°、9W=23.5/24°）の4系統。
+# **すべて '=' の単語境界マッチにする**理由が2つある:
+#   ① compact() は '.' を落とすので '20.5' は '205' になり、素の部分一致だと当たらない
+#   ② 素の部分一致だと '17w' が '7w' に、'121度' が '21度' に誤ヒットする
+_SW_NUM = ("=7w|=w7|=7番|=20.5|=21度|=21°"
+           "|=9w|=w9|=9番|=23.5|=24度|=24°")
+# 複数本セットは1本あたりの相場を壊すので除外（中央値が上振れする）。
+# 2026-08-21の初回ライブ集計で、G425の完品実売が
+# 「名器！G425フェアウェイウッド**5w.7w.9wセット** 70,000円」の**1件だけ**になり、
+# 中央値が70,000（実勢の7W中央は22,000〜27,900）に化けた。
+# 'セット' だけを見ると「ヘッドカバーセット」等を巻き込むので、
+# **番手が2つ以上並んでいる形**で判定する（compact()が '.' を落とすので
+# '5w.7w.9wセット' → '5w7w9wセット' となり、下の並びで拾える）
+_SW_EXC = ["本セット",
+           "3w5w", "3w7w", "3w9w", "5w7w", "5w9w", "7w9w",
+           "3番5番", "5番7番", "7番9番"]
 
 
 CATALOG: list[DriverModel] = [
@@ -1780,6 +1805,87 @@ CATALOG: list[DriverModel] = [
     DriverModel("ut_cw_quantum_maxfast", "キャロウェイ", "QUANTUM MAX FAST UT", "2026",
                 "キャロウェイ QUANTUM MAX FAST ユーティリティ",
                 ["quantum|クアンタム|クァンタム", "fast|ファスト"], [], category="ut"),
+
+    # ==================== ショートウッド(7W/9W) ====================
+    # 2026-08-21 新設。対象ブランド・年式レンジはユーザー指定
+    # （テーラー=M2(2016)以降 / キャロウェイ=ROGUE ST MAX以降 / ピン=G425以降 /
+    #   タイトリスト=こちらで選定 → 7W/9Wの実売があるTSi2・TSR2・GT2）。
+    #
+    # **行を足す前に90日の実売を実測して、実売ゼロのキーは作っていない**
+    # （M4は7W/9Wとも実売0件だったため不採用）。実測値は下表（2026-08-21・90日）:
+    #   ステルス2 7W:8本 / Qi35 7W:6 / ROGUE ST 7W:7,9W:3 / パラダイム 7W:3,9W:3 /
+    #   Ai SMOKE 7W:7 / ELYTE 7W:5 / G430 7W:3,9W:2 / TSi2 7W:5,9W:3 / TSR2 7W:6,9W:10
+    #   （M2・M6・SIM・SIM2・ステルス・Qi10・G425・G440・GT2 は各1〜2本の薄めだが、
+    #     この部門は「薄いこと」自体が特徴なので採用し、件数は表で見る）
+    #
+    # 7Wと9Wを1キーにまとめている理由: 単価差は多くの機種で15%以内
+    # （ROGUE ST 23,000/20,000、パラダイム 24,700/23,000、TSR2 25,000/22,500）で、
+    # **分けると30日窓でn=0〜1になり中央値がノイズになる**（mixed_medianの
+    # 「世代で分ける案は不採用」と同じ理由）。G425(22,500/33,500)と
+    # Qi10(28,500/37,400)だけは開きがあるので、判定時は番手を目視で確認すること。
+    DriverModel("sw_tm_m2", "テーラーメイド", "M2 7W/9W", "2016",
+                "テーラーメイド M2 フェアウェイウッド",
+                ["テーラーメイド|taylormade", "=m2", _SW_NUM], _SW_EXC, category="shortwood"),
+    DriverModel("sw_tm_m6", "テーラーメイド", "M6 7W/9W", "2019",
+                "テーラーメイド M6 フェアウェイウッド",
+                ["テーラーメイド|taylormade", "=m6", _SW_NUM], _SW_EXC, category="shortwood"),
+    DriverModel("sw_tm_sim", "テーラーメイド", "SIM 7W/9W", "2020",
+                "テーラーメイド SIM フェアウェイウッド",
+                ["sim", _SW_NUM], _SW_EXC + ["sim2"], category="shortwood"),
+    DriverModel("sw_tm_sim2", "テーラーメイド", "SIM2 7W/9W", "2021",
+                "テーラーメイド SIM2 フェアウェイウッド",
+                ["sim2", _SW_NUM], _SW_EXC, category="shortwood"),
+    DriverModel("sw_tm_stealth", "テーラーメイド", "STEALTH 7W/9W", "2022",
+                "テーラーメイド ステルス フェアウェイウッド",
+                ["stealth|ステルス", _SW_NUM],
+                _SW_EXC + ["stealth2|ステルス2", "plus|プラス"], category="shortwood"),
+    DriverModel("sw_tm_stealth2", "テーラーメイド", "STEALTH2 7W/9W", "2023",
+                "テーラーメイド ステルス2 フェアウェイウッド",
+                ["stealth2|ステルス2", _SW_NUM], _SW_EXC, category="shortwood"),
+    DriverModel("sw_tm_qi10", "テーラーメイド", "Qi10 7W/9W", "2024",
+                "テーラーメイド Qi10 フェアウェイウッド",
+                ["qi10", _SW_NUM], _SW_EXC, category="shortwood"),
+    DriverModel("sw_tm_qi35", "テーラーメイド", "Qi35 7W/9W", "2025",
+                "テーラーメイド Qi35 フェアウェイウッド",
+                ["qi35", _SW_NUM], _SW_EXC, category="shortwood"),
+    DriverModel("sw_cw_roguest", "キャロウェイ", "ROGUE ST MAX 7W/9W", "2022",
+                "キャロウェイ ローグST MAX フェアウェイウッド",
+                ["roguest|ローグst", _SW_NUM], _SW_EXC, category="shortwood"),
+    # 兄弟分離: X（別ヘッド）と MAX FAST（軽量・別価格帯）を外す。
+    # 2026-08-21の初回集計で「PARADYM X 7W」「PARADYM MAX FAST 7W 22度」を吸っていた。
+    # FW側の fw_cw_paradym は excludes に裸の "x" を使っているが、それだと
+    # **シャフトのXフレックス（6X / TX）まで巻き込む**ので、ここでは型名で書く
+    DriverModel("sw_cw_paradym", "キャロウェイ", "PARADYM 7W/9W", "2023",
+                "キャロウェイ パラダイム フェアウェイウッド",
+                ["paradym|パラダイム", _SW_NUM],
+                _SW_EXC + ["aismoke|aiスモーク", "paradymx|パラダイムx",
+                           "maxfast|マックスファスト"], category="shortwood"),
+    DriverModel("sw_cw_aismoke", "キャロウェイ", "PARADYM Ai SMOKE 7W/9W", "2024",
+                "キャロウェイ パラダイム Ai SMOKE フェアウェイウッド",
+                ["aismoke|aiスモーク", _SW_NUM], _SW_EXC, category="shortwood"),
+    DriverModel("sw_cw_elyte", "キャロウェイ", "ELYTE 7W/9W", "2025",
+                "キャロウェイ ELYTE フェアウェイウッド",
+                ["elyte|エリート", _SW_NUM], _SW_EXC, category="shortwood"),
+    DriverModel("sw_ping_g425", "ピン", "G425 7W/9W", "2021",
+                "ピン G425 フェアウェイウッド",
+                ["g425", _SW_NUM], _SW_EXC, category="shortwood"),
+    # HL（軽量）とLSTは別ライン。FW側 fw_ping_g430max と同じ除外を持たせる
+    DriverModel("sw_ping_g430", "ピン", "G430 7W/9W", "2023",
+                "ピン G430 フェアウェイウッド",
+                ["g430", _SW_NUM], _SW_EXC + ["g430hl", "g430lst"],
+                category="shortwood"),
+    DriverModel("sw_ping_g440", "ピン", "G440 7W/9W", "2024",
+                "ピン G440 フェアウェイウッド",
+                ["g440", _SW_NUM], _SW_EXC, category="shortwood"),
+    DriverModel("sw_ti_tsi2", "タイトリスト", "TSi2 7W/9W", "2021",
+                "タイトリスト TSi2 フェアウェイウッド",
+                ["tsi2", _SW_NUM], _SW_EXC, category="shortwood"),
+    DriverModel("sw_ti_tsr2", "タイトリスト", "TSR2 7W/9W", "2022",
+                "タイトリスト TSR2 フェアウェイウッド",
+                ["tsr2", _SW_NUM], _SW_EXC, category="shortwood"),
+    DriverModel("sw_ti_gt2", "タイトリスト", "GT2 7W/9W", "2024",
+                "タイトリスト GT2 フェアウェイウッド",
+                ["=gt2", _SW_NUM], _SW_EXC, category="shortwood"),
 ]
 
 CATALOG_BY_KEY = {m.key: m for m in CATALOG}
