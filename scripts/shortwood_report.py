@@ -125,15 +125,22 @@ def main() -> None:
     print(f"# 今日のショートウッド（7W/9W）  データ: {stamp}")
     print(f"\n部門 {len(rows)} 機種 / 30日実売 合計 "
           f"{sum(r.get('sold') or 0 for r in rows)}本\n")
-    print(f"{'機種':<30}{'完品':>5}{'頭':>4}{'販中':>5}{'完品中央':>10}"
-          f"{'頭中央':>9}{'最安':>9}{'割安':>6}{'7d':>4}{'日数':>6}  状態")
+    # 完品/ヘッド単品の内訳は --live でしか計算していない（popularity.json は持たない）。
+    # 内訳が無いのに「完品」列へ合計を出すと市場の厚みを誤読するので、見出しを変える
+    # （2026-08-22: G425は実売4本すべてがヘッド単品なのに「完品4」と表示していた）
+    split = any("sold_full" in r for r in rows)
+    print(f"{'機種':<30}{('完品' if split else '実売*'):>5}{'頭':>4}{'販中':>5}"
+          f"{'完品中央':>10}{'頭中央':>9}{'最安':>9}{'割安':>6}{'7d':>4}"
+          f"{'日数':>6}  状態")
     cheap, thin = [], []
     for r in rows:
         med, lo = r.get("sold_price_median"), r.get("active_min")
         rate = (lo / med) if (med and lo) else None
         w7 = (r.get("w7") or {}).get("sold") or 0
         d = r.get("days_median")
-        full = r.get("sold_full", r.get("sold") or 0)
+        full = r.get("sold_full")
+        if full is None:                      # 内訳なし（popularity.json 由来）
+            full = r.get("sold") or 0
         state = r.get("flag") or ""
         if med and lo and CHEAP_LO <= (rate or 9) <= CHEAP_HI:
             state = "★割安圏 " + state
@@ -146,8 +153,13 @@ def main() -> None:
               f"{(r.get('head_median') or 0):>9,}{(lo or 0):>9,}"
               f"{(f'{rate*100:.0f}%' if rate else '-'):>6}{w7:>4}"
               f"{(f'{d}d' if d is not None else '-'):>6}  {state}")
-    print("  ※完品=完品の30日実売本数／頭=ヘッド単品の30日実売本数。"
-          "中央値・最安・割安率はすべて完品同士で計算")
+    if split:
+        print("  ※完品=完品の30日実売本数／頭=ヘッド単品の30日実売本数。"
+              "中央値・最安・割安率はすべて完品同士で計算")
+    else:
+        print("  ※**実売*はヘッド単品を含む合計**（完品/ヘッドの内訳は --live でのみ算出）。"
+              "中央値・最安・割安率は完品同士で計算しているので、"
+              "『実売◯本・完品中央が空欄』の機種は実売が全部ヘッド単品")
 
     print("\n## 割安圏（中央の35〜80%）の販売中")
     if not cheap:
