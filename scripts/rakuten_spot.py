@@ -27,7 +27,12 @@ for key in keys:
     print(f"\n##### {m.brand} {m.label}（{m.keyword} 中古）#####")
     out = []
     try:
-        for l in rakuten.search(m.keyword + " 中古", pages=1):
+        # 2026-08-22修正: pages=1 だと**最安を取りこぼす**。楽天の既定並びは価格順では
+        # ないため、1ページ(30件)では価格分布の下端に届かない。実際この日、
+        # history.db が2日continuedで 24,970円を記録していた G430 MAX に対し、
+        # pages=1 の本スクリプトは 35,080円を「最安」と表示していた
+        # （集計側は同機種で28〜41件を見ている）。買いライン判定の入口なので母数を揃える
+        for l in rakuten.search(m.keyword + " 中古", pages=3):
             if not l.is_used or l.price < 8000:
                 continue
             if is_parts_junk(l.title) or detect_head_only(normalize(l.title)) or is_lefty(l.title):
@@ -39,7 +44,8 @@ for key in keys:
         print("  取得失敗:", e)
         continue
     out.sort(key=lambda l: l.price)
-    for l in out[:4]:
+    print(f"  （該当 {len(out)}件 / 安い順5件）")
+    for l in out[:5]:
         print(f"  ¥{l.price:,} | {l.title[:80]}")
         print(f"    {l.url}")
         print(f"    店: {l.shop}")
