@@ -21,7 +21,7 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
 
 from .base import Listing, make_session, polite_sleep
-from ..normalize import extract_loft
+from ..normalize import extract_loft, is_blocked_seller
 
 API = "https://api.mercari.jp/v2/entities:search"
 ITEM_URL = "https://jp.mercari.com/item/{id}"
@@ -155,7 +155,13 @@ def search_recent_raw(keyword: str, status: str, price_min: int = 0,
                                     price_min=price_min, page_token=token)
         if not items:
             return out, False
-        out.extend(items)
+        # ブロック指定の出品者はここで落とす。楽天が is_blocked_shop を
+        # スクレイパ層で呼んでいるのと同じ位置なので、人気ランキング・本命候補・
+        # LINE通知・激アツの**全経路に一度で効く**（2026-08-23導入）。
+        # ページ送り・打ち切り判定は**フィルタ前の items** で行うこと。
+        # 除外後のリストで判定すると、1ページ丸ごとブロック対象だったときに
+        # 「末尾に到達した」と誤判定したり、同じページを取り直したりする
+        out.extend(i for i in items if not is_blocked_seller(i.get("sellerId")))
         oldest = min(int(i.get("created") or 0) for i in items)
         if stop_before and oldest < stop_before:
             return out, False        # 期間の端まで到達＝全件取得できた
@@ -170,6 +176,9 @@ def _to_listing(raw: dict, sold: bool) -> Listing | None:
     title = raw.get("name")
     # メルカリShops(事業者)は在庫再出品で相場が歪むため、個人間フリマのみ採用
     if not mid.startswith("m") or raw.get("itemType") == "ITEM_TYPE_BEYOND":
+        return None
+    # ブロック指定の出品者（search_closed / search_active はこの経路を通る）
+    if is_blocked_seller(raw.get("sellerId")):
         return None
     if not price or not title:
         return None

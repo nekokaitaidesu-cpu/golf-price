@@ -347,6 +347,23 @@ def is_blocked_shop(shop: str = "", url: str = "") -> bool:
     return any(b in s for b in BLOCKED_SHOPS)
 
 
+# 相場を歪める／ランキングを占有するメルカリ出品者（2026-08-23 ユーザー指定で導入）。
+# 値は **プロフィールURLの数字部分** = APIレスポンスの sellerId。
+#   https://jp.mercari.com/user/profile/187241371  → "187241371"
+# 個人出品には sellerId が入る（実測929/930件）。メルカリShopsは "0" なので
+# ここでは効かない（Shopsは itemType で別途除外済み）。
+BLOCKED_SELLERS = {
+    "187241371",   # ユーザー指定 2026-08-23（ランキング占有）
+    "203010442",   # ユーザー指定 2026-08-23（ランキング占有）
+}
+
+
+def is_blocked_seller(seller_id) -> bool:
+    """メルカリの出品者IDがブロック対象か。"""
+    s = str(seller_id or "").strip()
+    return bool(s) and s != "0" and s in BLOCKED_SELLERS
+
+
 # 単品（バラ売り1本）を示す語
 _SINGLE_TOKENS = ["単品", "ばら売り", "ばらうり", "1本", "１本", "単体", "バラ", "ばら"]
 # 本数/レンジ系のセット判定（番手レンジ例: 5-pw, 5～pw, 6-9, 5i-pw, 5番-pw）
