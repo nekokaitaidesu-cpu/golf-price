@@ -1977,9 +1977,19 @@ CATALOG: list[DriverModel] = [
     DriverModel("pt_od_whitehotog", "オデッセイ", "ホワイトホット OG", "2021",
                 "オデッセイ ホワイトホット OG パター",
                 ["whitehotog|ホワイトホットog"], _WP_EXC, category="putter"),
-    DriverModel("pt_od_toulon", "オデッセイ", "トゥーロン", "2019",
+    # ⚠ トゥーロンは**都市名ごとにヘッド形状が別物**で、価格帯が二層以上に割れる
+    #   （2026-08-23実測 120日 n=38）:
+    #     インディアナポリス n=2 中央18,250 ／ アトランタ n=3 中央22,000 ／
+    #     ポートランド n=3 中央21,000 ／ サンディエゴ n=5 中央33,000 ／
+    #     ガレージ/限定 52,999〜77,000
+    #   全体中央24,400 は「どの型でもない中間値」。楽天のインディアナポリス16,500と
+    #   突き合わせると粗利+8,775が出るが、**自分の型の中央18,250に対しては+300**。
+    # 型別に分ける案は不採用: 型名を書かない出品が13/38（34%）あり、
+    # 分けると1バケツn=1〜5でノイズになる。回転は正しいので行は残す
+    DriverModel("pt_od_toulon", "オデッセイ", "トゥーロン（型混在）", "2019",
                 "オデッセイ トゥーロン パター",
-                ["toulon|トゥーロン"], _WP_EXC, category="putter"),
+                ["toulon|トゥーロン"], _WP_EXC, category="putter",
+                mixed_median=True),
     DriverModel("pt_od_trihot5k", "オデッセイ", "トライホット 5K", "2022",
                 "オデッセイ トライホット 5K パター",
                 ["trihot|トライホット"], _WP_EXC, category="putter"),
@@ -1991,10 +2001,19 @@ CATALOG: list[DriverModel] = [
     DriverModel("pt_tm_spidertourx", "テーラーメイド", "スパイダー ツアーX", "2022",
                 "テーラーメイド スパイダー ツアーX パター",
                 ["spidertourx|スパイダーツアーx"], _WP_EXC, category="putter"),
-    DriverModel("pt_tm_spidertour", "テーラーメイド", "スパイダー ツアー（無印）", "2017",
+    # ⚠ 無印は**さらに二層**だった（2026-08-23に楽天ランキング1位として露見）。
+    #   2017世代 RED / BLACK / PLATINUM …… 8,000〜15,500
+    #   2020以降 TM1 / TM2 / トラス / T7 … 19,900〜33,000
+    # 中央24,500はこの中間値で、楽天のRED 8,609円と突き合わせると
+    # 粗利+13,470という**存在しない数字**が出る（REDの実勢は12,000〜15,000）。
+    # 世代語で分割する案は、単に「Spider TOUR パター」とだけ書く出品が相当数あって
+    # どちらのバケツにも入れられないため不採用。**回転は正しいので行は残し、
+    # 割安率による候補生成だけ止める**（mixed_median の本来の使い方）
+    DriverModel("pt_tm_spidertour", "テーラーメイド", "スパイダー ツアー（無印・世代混在）", "2017",
                 "テーラーメイド スパイダー ツアー パター",
                 ["spidertour|スパイダーツアー"],
-                _WP_EXC + ["spidertourx|スパイダーツアーx"], category="putter"),
+                _WP_EXC + ["spidertourx|スパイダーツアーx"], category="putter",
+                mixed_median=True),
     DriverModel("pt_tm_spidergt", "テーラーメイド", "スパイダー GT", "2022",
                 "テーラーメイド スパイダー GT パター",
                 ["spidergt|スパイダーgt"], _WP_EXC, category="putter"),
