@@ -8,7 +8,8 @@ from concurrent.futures import ThreadPoolExecutor
 from .spec import MODELS, DEFAULT_MODEL_KEY, ModelSpec
 from .normalize import (analyze, normalize, detect_head_only, is_ladies,
                         is_lefty, is_parts_junk,
-                        compact, extract_loft, looks_like_iron_set)
+                        compact, extract_loft, looks_like_iron_set,
+                        looks_like_multi_set)
 from .scrapers import rakuten, golfpartner, yahoo_auction, mercari
 from .scrapers.base import Listing
 from . import flea
@@ -440,6 +441,11 @@ def _catalog_match(title: str, m: DriverModel) -> bool:
     # アイアンは「セット同士」で比較したいので単品（バラ売り1本）を除外し、
     # セットらしい出品のみ採用する（最安が単品で歪むのを防ぐ）
     if m.category == "iron" and not looks_like_iron_set(title):
+        return False
+    # 逆にアイアン以外は**単品同士**で比較したい。複数本まとめ売りは1本あたりの
+    # 相場を壊す（2026-08-24: TSi2 UTの実売7件中4件がセットで中央28,490に化けていた。
+    # 単品の実勢は10,000〜18,000）。chipper はセット概念が無いので対象外
+    if m.category not in ("iron", "chipper") and looks_like_multi_set(title):
         return False
     for x in m.excludes:
         if any(_term_hit(alt, c, n) for alt in x.split("|")):
