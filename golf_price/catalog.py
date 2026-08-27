@@ -737,8 +737,16 @@ CATALOG: list[DriverModel] = [
                 "プロギア SUPER egg ドライバー", ["プロギア|prgr", "スーパーegg|superegg"], []),
     DriverModel("dr_prgr_rsf", "プロギア", "RS-F", "—",
                 "プロギア RS-F ドライバー", ["プロギア|prgr", "rsf"], ["rsfプロトタイ"]),
-    DriverModel("dr_prgr_rs", "プロギア", "RS", "—",
-                "プロギア RS ドライバー", ["プロギア|prgr", "=rs"], ["rs5", "rsf", "rsjust", "rsduo", "prototype", "rsd", "rse", "rsspeed|=speed"]),
+    # ⚠ プロギア「RS」は**2016年から2024年まで同じ名前で出続けているシリーズ**。
+    # 2026-08-27の denominator_check で 120日実売12件が 3,200〜60,000（18.8倍）と判明し、
+    # 年式トークンも 2016 / 2017 / 2024年 が並んでいた。中央7,545（完品13,400）に対し
+    # 楽天ランキングは30日窓の18,000を分母にして粗利+9,472を表示していた＝信用できない。
+    # 年式を書かない出品が7/12（58%）あり分割は不可。回転は使えるので行は残す。
+    # なお yt_driver_rs2 が required 同一（excludes 違いのみ）で**実質重複**しており、
+    # 楽天ランキングに2行出ていた。表記違い重複18組の宿題と一緒に整理する
+    DriverModel("dr_prgr_rs", "プロギア", "RS（年式混在）", "—",
+                "プロギア RS ドライバー", ["プロギア|prgr", "=rs"], ["rs5", "rsf", "rsjust", "rsduo", "prototype", "rsd", "rse", "rsspeed|=speed"],
+                mixed_median=True),
     DriverModel("dr_tsuruya_axel", "つるや", "AXEL GF", "—",
                 "つるや アクセル GF ドライバー", ["つるや|tsuruya", "アクセル|axel"], ["premium"]),
     DriverModel("dr_cw_roguestar", "キャロウェイ", "ROGUE STAR", "2018",
@@ -1301,8 +1309,10 @@ CATALOG: list[DriverModel] = [
                 "カムイ KP-01 ドライバー", ["カムイ", "kp01"], []),
     DriverModel("yt_driver_xp03", "カムイ", "XP-03", "—",
                 "カムイ XP-03 ドライバー", ["カムイ", "xp03"], []),
-    DriverModel("yt_driver_rs2", "プロギア", "RS", "—",
-                "プロギア RS ドライバー", ["プロギア|prgr", "=rs"], ["rsf", "rsx", "rs5", "rs0", "nabla", "rsspeed", "just", "rs+", "prototype", "rsd", "rsduo", "rse"]),
+    # dr_prgr_rs と required が同一（excludes 違いのみ）の実質重複。年式混在も同じ
+    DriverModel("yt_driver_rs2", "プロギア", "RS（年式混在・dr_prgr_rsと重複）", "—",
+                "プロギア RS ドライバー", ["プロギア|prgr", "=rs"], ["rsf", "rsx", "rs5", "rs0", "nabla", "rsspeed", "just", "rs+", "prototype", "rsd", "rsduo", "rse"],
+                mixed_median=True),
     DriverModel("yt_driver_rsd", "プロギア", "RS D", "—",
                 "プロギア RS D ドライバー", ["プロギア|prgr", "rsd"], ["rsduo"]),
         DriverModel("yt_fw_rogue", "キャロウェイ", "ROGUE ST LSツアー", "—",
