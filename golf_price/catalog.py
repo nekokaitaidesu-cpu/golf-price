@@ -950,8 +950,17 @@ CATALOG: list[DriverModel] = [
                 "オノフ KURO フェアウェイウッド", ["オノフ|onoff", "kuro"], [], category="fw"),
     DriverModel("yt_iron_iron", "オノフ", "FORGED IRON KURO", "—",
                 "オノフ FORGED IRON KURO アイアン", ["オノフ|onoff", "iron"], [], category="iron"),
-    DriverModel("yt_driver_kuro", "オノフ", "KURO", "—",
-                "オノフ KURO ドライバー", ["オノフ|onoff", "kuro"], []),
+    # ⚠ オノフ KURO も**同名で毎年更新される国内メーカー型**（2026-08-28実測）。
+    # 150日実売31件が 5,000〜48,000（9.6倍）で、年式別に見ると:
+    #   2019 n=1 7,700 ／ 2022 n=6 14,750 ／ 2024 n=4 22,050 ／ **2026 n=4 45,250**
+    # 最新モデルが中央値を引き上げ、楽天の5,899（古い年式）と突き合わせて
+    # 粗利+12,266が出ていた。年式表記なしが13/31（42%）で分割不可。
+    # 8/27のプロギアRS（2016〜2024）に続く同型。
+    # **国内メーカーはモデル名を変えずに年式更新する**ので世代混在が起きやすい
+    # （海外勢は SIM2→ステルス→Qi10 と名前が変わるので分離される）
+    DriverModel("yt_driver_kuro", "オノフ", "KURO（年式混在）", "—",
+                "オノフ KURO ドライバー", ["オノフ|onoff", "kuro"], [],
+                mixed_median=True),
     DriverModel("yt_iron_p8cb", "テーラーメイド", "P8CB", "—",
                 "テーラーメイド P8CB アイアン", ["p8cb"], [], category="iron"),
     DriverModel("yt_iron_idi", "ピン", "iDi", "—",
