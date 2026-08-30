@@ -101,6 +101,10 @@ _WP_EXC = ["本セット", "セット売り"]
 # 'セット' だけを見ると「ヘッドカバーセット」等を巻き込むので、
 # **番手が2つ以上並んでいる形**で判定する（compact()が '.' を落とすので
 # '5w.7w.9wセット' → '5w7w9wセット' となり、下の並びで拾える）
+# Qi35 の TOUR モデルだけを指すパターン。裸の "tour" だとシャフトの「ツアーAD」を
+# 巻き込むため、「qi35」に隣接する tour / ツアー だけを拾う（2026-08-31に実測で検証）。
+_QI35_TOUR = "qi35 tour|qi35 ツアー|qi35tour"
+
 _SW_EXC = ["本セット",
            "3w5w", "3w7w", "3w9w", "5w7w", "5w9w", "7w9w",
            "3番5番", "5番7番", "7番9番"]
@@ -1727,13 +1731,17 @@ CATALOG: list[DriverModel] = [
                 "テーラーメイド Qi35 LS ドライバー", ["qi35ls"], []),
     DriverModel("dr_tm_qi35maxlite", "テーラーメイド", "Qi35 MAX LITE", "2025",
                 "テーラーメイド Qi35 MAX LITE ドライバー", ["qi35maxlite"], []),
+    # 2026-08-31: 裸の "tour|ツアー" は**シャフトの「ツアーAD / tour AD」まで巻き込む**。
+    # 実測で「Qi35 7W ツアーAD PT-6S」など**無印ヘッドのカスタム3件**を誤って落としていた
+    # （PARADYM の裸 "x" が Xフレックスを巻き込んでいたのと同じ型のバグ）。
+    # _QI35_TOUR は「qi35 に隣接する tour / ツアー」だけを拾う。
     DriverModel("fw_tm_qi35", "テーラーメイド", "Qi35 FW", "2025",
                 "テーラーメイド Qi35 フェアウェイウッド", ["qi35"],
-                ["max", "tour|ツアー"], category="fw"),
+                ["max", _QI35_TOUR], category="fw"),
     DriverModel("fw_tm_qi35max", "テーラーメイド", "Qi35 MAX FW", "2025",
                 "テーラーメイド Qi35 MAX フェアウェイウッド", ["qi35max"], ["lite"], category="fw"),
     DriverModel("fw_tm_qi35tour", "テーラーメイド", "Qi35 TOUR FW", "2025",
-                "テーラーメイド Qi35 ツアー フェアウェイウッド", ["qi35", "tour|ツアー"], [], category="fw"),
+                "テーラーメイド Qi35 ツアー フェアウェイウッド", ["qi35", _QI35_TOUR], [], category="fw"),
     DriverModel("ut_tm_qi35", "テーラーメイド", "Qi35 レスキュー", "2025",
                 "テーラーメイド Qi35 レスキュー", ["qi35"], ["max"], category="ut"),
     DriverModel("ut_tm_qi35maxlite", "テーラーメイド", "Qi35 MAX LITE レスキュー", "2025",
@@ -1890,9 +1898,13 @@ CATALOG: list[DriverModel] = [
     DriverModel("sw_tm_qi10", "テーラーメイド", "Qi10 7W/9W", "2024",
                 "テーラーメイド Qi10 フェアウェイウッド",
                 ["qi10", _SW_NUM], _SW_EXC, category="shortwood"),
+    # 2026-08-31実測（7W完品36件）: **TOURモデルが混ざって中央値を上げていた**。
+    #   無印(ツアーADカスタム込み) n=23 中央 29,800 ／ TOUR n=4 中央 38,500（+8,700）
+    # 一方 **MAX は無印とほぼ同値**（MAX n=9 中央29,800 vs 無印29,800）なので分けない。
+    # → グレード混在が必ず分母を壊すわけではない。実測して差が無ければ触らないのが正解。
     DriverModel("sw_tm_qi35", "テーラーメイド", "Qi35 7W/9W", "2025",
                 "テーラーメイド Qi35 フェアウェイウッド",
-                ["qi35", _SW_NUM], _SW_EXC, category="shortwood"),
+                ["qi35", _SW_NUM], _SW_EXC + [_QI35_TOUR], category="shortwood"),
     # 2026-08-28追加。ユーザーがゴルフドゥ実店舗で旧グローレ7Wを4,000→8,500で売却した
     # のをきっかけに測ったところ、**グローレは世代で6倍違う**ことが判明（180日実売）:
     #   旧グローレ 7W 4,000（20.8日）／ SIMグローレ 7W 13,000（5.1日）／
