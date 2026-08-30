@@ -105,6 +105,11 @@ _WP_EXC = ["本セット", "セット売り"]
 # 巻き込むため、「qi35」に隣接する tour / ツアー だけを拾う（2026-08-31に実測で検証）。
 _QI35_TOUR = "qi35 tour|qi35 ツアー|qi35tour"
 
+# PARADYM のトリプルダイヤ表記ゆれ。実測で「トリプルダイヤ」と「♦︎♦︎♦︎」（U+2666＋異体字
+# セレクタ。"◆" U+25C6 とは別の文字）がどちらも素通りしていた。異体字セレクタが挟まるので
+# "♦♦♦" では拾えず、単体の "♦" で拾う必要がある（2026-08-31に実測で検証）。
+_PARADYM_TD = "◆◆◆|♦|トリプルダイヤ|triplediamond"
+
 _SW_EXC = ["本セット",
            "3w5w", "3w7w", "3w9w", "5w7w", "5w9w", "7w9w",
            "3番5番", "5番7番", "7番9番"]
@@ -154,12 +159,12 @@ CATALOG: list[DriverModel] = [
     # --- PARADYM (2023) ---
     DriverModel("cw_paradym", "キャロウェイ", "PARADYM", "2023",
                 "キャロウェイ パラダイム ドライバー", ["paradym"],
-                ["paradymx", "smoke", "◆", "triplediamond"]),
+                ["paradymx", "smoke", _PARADYM_TD]),
     DriverModel("cw_paradymx", "キャロウェイ", "PARADYM X", "2023",
                 "キャロウェイ パラダイム X ドライバー", ["paradymx"], ["smoke"]),
     DriverModel("cw_paradym_td", "キャロウェイ", "PARADYM ◆◆◆", "2023",
                 "キャロウェイ パラダイム トリプルダイヤモンド ドライバー",
-                ["paradym", "◆◆◆"], ["smoke", "◆◆◆max"]),
+                ["paradym", _PARADYM_TD], ["smoke", "◆◆◆max"]),
     # --- PARADYM Ai SMOKE (2024) ---
     DriverModel("cw_aismoke_max", "キャロウェイ", "PARADYM Ai SMOKE MAX", "2024",
                 "キャロウェイ パラダイム Ai SMOKE MAX ドライバー", ["aismoke", "max"],
