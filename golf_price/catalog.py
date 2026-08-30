@@ -366,8 +366,14 @@ CATALOG: list[DriverModel] = [
                 "テーラーメイド SIM2 MAX レスキュー ユーティリティ", ["sim2max"], [], category="ut"),
     DriverModel("ut_tm_stealth2", "テーラーメイド", "STEALTH2 レスキュー", "2023",
                 "テーラーメイド ステルス2 レスキュー ユーティリティ", ["stealth2"], [], category="ut"),
+    # 2026-08-30: ドライバー/FW側と違い UT だけ excludes が空で MAX を飲んでいた。
+    # 120日実売59件が 無印 n=32 中央20,300 ／ MAX n=25 中央25,000 の二層で、
+    # 全体中央23,800 はどちらでもない中間値だった（楽天の偽の粗利+1,840の原因）。
+    # 両層とも母数が十分なので mixed_median でなく分割で対処（8/22スパイダーと同じ）。
     DriverModel("ut_tm_qi10", "テーラーメイド", "Qi10 レスキュー", "2024",
-                "テーラーメイド Qi10 レスキュー ユーティリティ", ["qi10"], [], category="ut"),
+                "テーラーメイド Qi10 レスキュー ユーティリティ", ["qi10"], ["max"], category="ut"),
+    DriverModel("ut_tm_qi10max", "テーラーメイド", "Qi10 MAX レスキュー", "2024",
+                "テーラーメイド Qi10 MAX レスキュー ユーティリティ", ["qi10max"], [], category="ut"),
     DriverModel("ut_cw_paradym", "キャロウェイ", "PARADYM UT", "2023",
                 "キャロウェイ パラダイム ユーティリティ", ["paradym"], ["smoke"], category="ut"),
     DriverModel("ut_cw_aismoke", "キャロウェイ", "Ai SMOKE UT", "2024",
