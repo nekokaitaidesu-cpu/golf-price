@@ -330,8 +330,17 @@ CATALOG: list[DriverModel] = [
                 "テーラーメイド ステルス2 フェアウェイウッド", ["stealth2|ステルス2"], ["plus|プラス", "hd"], category="fw"),
     DriverModel("fw_tm_qi10", "テーラーメイド", "Qi10", "2024",
                 "テーラーメイド Qi10 フェアウェイウッド", ["qi10"], ["max"], category="fw"),
+    # 2026-08-31: FW側に2つのバグがあった。
+    #  ①excludes の裸の "x" が**シャフトのXフレックス（6X / TX）まで巻き込んで**完品を落としていた
+    #    （sw_cw_paradym には2026-08-21から同じ注意書きがあったのにFW側が直っていなかった）
+    #  ②落とした PARADYM X FW の**受け皿キーが存在しなかった**（ドライバーは cw_paradymx があるのに）
+    # 実測: PARADYM X の 3W完品だけで n=21・中央15,800（10,500〜20,500）と十分な母数がある。
     DriverModel("fw_cw_paradym", "キャロウェイ", "PARADYM", "2023",
-                "キャロウェイ パラダイム フェアウェイウッド", ["paradym"], ["smoke", "x"], category="fw"),
+                "キャロウェイ パラダイム フェアウェイウッド", ["paradym"],
+                ["smoke", "paradymx|パラダイムx"], category="fw"),
+    DriverModel("fw_cw_paradymx", "キャロウェイ", "PARADYM X", "2023",
+                "キャロウェイ パラダイム X フェアウェイウッド",
+                ["paradymx|パラダイムx"], ["smoke"], category="fw"),
     DriverModel("fw_cw_aismoke", "キャロウェイ", "PARADYM Ai SMOKE", "2024",
                 "キャロウェイ パラダイム Ai SMOKE フェアウェイウッド", ["aismoke"], [], category="fw"),
     DriverModel("fw_ping_g425max", "ピン", "G425 MAX", "2021",
