@@ -40,6 +40,9 @@ POP_PATH = os.path.join(CACHE_DIR, "popularity.json")
 ITEM_URL = "https://jp.mercari.com/item/{id}"
 # 割安圏（CLAUDE.md の運用値: 割安=35〜72%・準割安=〜80%）
 CHEAP_LO, CHEAP_HI = 0.35, 0.80
+# 完品の実売がこの本数未満の機種は中央値を信用しない（割安圏の判定から外す）。
+# denominator_check.py の「n<3で中央値は語れない」と同じ基準。
+MIN_N_FOR_RATIO = 3
 # ショートウッドの買いライン（2026-08-21のユーザー運用値）:
 # 同機種の5W相場×1.2以下なら割安。ここでは5W単独の相場を持っていないので
 # FWキー（3W/5W主体）の中央値を代理に使う。あくまで目安として出す
@@ -142,7 +145,15 @@ def main() -> None:
         if full is None:                      # 内訳なし（popularity.json 由来）
             full = r.get("sold") or 0
         state = r.get("flag") or ""
-        if med and lo and CHEAP_LO <= (rate or 9) <= CHEAP_HI:
+        # 2026-08-31: 完品n<3の中央値で割安率を出していたため、偽の割安圏が出ていた。
+        # 実測: M2 7W は表示「完品1本・中央22,999」だったが、120日で測ると
+        # 完品25本・中央13,000。販売中18,000は「78%の割安」ではなく実は138%。
+        # SIM2 7W も表示「完品1本・中央30,000」→ 実測22本・中央23,000で、
+        # 販売中22,800は99%。**その日の割安圏2件が両方とも偽物**だった。
+        # denominator_check の「n<3で中央値は語れない」をこちらにも入れる。
+        if full < MIN_N_FOR_RATIO:
+            state = f"⚠n={full}分母不足 " + state
+        elif med and lo and CHEAP_LO <= (rate or 9) <= CHEAP_HI:
             state = "★割安圏 " + state
             cheap.append(r)
         if full >= 2 and (r.get("active") or 0) == 0:
