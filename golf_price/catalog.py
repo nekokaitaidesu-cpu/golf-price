@@ -1922,6 +1922,19 @@ CATALOG: list[DriverModel] = [
                 "テーラーメイド ステルスグローレ フェアウェイウッド",
                 ["stealthgloire|ステルスグローレ", _SW_NUM], _SW_EXC,
                 category="shortwood"),
+    # 2026-09-04追加。8/28に「グローレは世代で6倍違う」と測っておきながら
+    # SIMグローレのキーを作っていなかった（ステルスグローレだけあった）。
+    #   旧グローレ 7W  4,000（回転20.8日） ／ SIMグローレ 7W 14,800（回転5.1日）
+    # 2026-09-04実測: 完品（メンズ）n=15・中央14,800（11,800〜22,000）・販売中0件。
+    # 表記ゆれが多いので5通りを列挙する（実タイトル15件で検証済み）:
+    #   「SIM GLOIRE」「simgloire」「SIM グローレ」「SIMグローレ」「シムグローレ」
+    # ステルスグローレ／グローレF2／ロイヤルグローレ／グローレリザーブ／
+    # SIM MAX・SIM2 MAX（グローレでない）が拾われないことも確認済み。
+    DriverModel("sw_tm_simgloire", "テーラーメイド", "SIM グローレ 7W/9W", "2020",
+                "テーラーメイド SIM グローレ フェアウェイウッド",
+                ["sim gloire|simgloire|sim グローレ|simグローレ|シムグローレ", _SW_NUM],
+                _SW_EXC + ["レディース|ウィメンズ|women"],
+                category="shortwood"),
     DriverModel("sw_cw_roguest", "キャロウェイ", "ROGUE ST MAX 7W/9W", "2022",
                 "キャロウェイ ローグST MAX フェアウェイウッド",
                 ["roguest|ローグst", _SW_NUM], _SW_EXC, category="shortwood"),
