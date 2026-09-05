@@ -110,6 +110,14 @@ _QI35_TOUR = "qi35 tour|qi35 ツアー|qi35tour"
 # "♦♦♦" では拾えず、単体の "♦" で拾う必要がある（2026-08-31に実測で検証）。
 _PARADYM_TD = "◆◆◆|♦|トリプルダイヤ|triplediamond"
 
+# ELYTE の兄弟モデルを分ける2つのパターン（2026-09-05に実測で確定）。
+#  ・X: normalize() は空白を保持するので "elytex" だけでは「ELYTE X」（スペース入り）を
+#       落とせない。実測32件中6件がスペース入りだった。
+#  ・TD: 実売は「ELYTE ◇◇◇」（U+25C7 白抜き）表記。既存の "◆|♦" では拾えず、
+#       3件（50,000/60,000/77,600）が無印に混ざって中央値を押し上げていた。
+_ELYTE_X  = "elytex|elyte x|エリートx|エリート x"
+_ELYTE_TD = "◆|◇|♦|トリプルダイヤ|triplediamond"
+
 _SW_EXC = ["本セット",
            "3w5w", "3w7w", "3w9w", "5w7w", "5w9w", "7w9w",
            "3番5番", "5番7番", "7番9番"]
@@ -1778,7 +1786,7 @@ CATALOG: list[DriverModel] = [
     # --- キャロウェイ ELYTE (2025) ---
     DriverModel("cw_elyte", "キャロウェイ", "ELYTE", "2025",
                 "キャロウェイ ELYTE ドライバー", ["キャロウェイ|callaway", "elyte|エリート"],
-                ["elytex|エリートx", "fast|ファスト", "◆|トリプルダイヤ|triplediamond",
+                [_ELYTE_X, "fast|ファスト", _ELYTE_TD,
                  "titanium|チタニウム", "10k", "mini|ミニ"]),
     DriverModel("cw_elytex", "キャロウェイ", "ELYTE X", "2025",
                 "キャロウェイ ELYTE X ドライバー", ["elytex|エリートx"], ["10k"]),
@@ -1786,11 +1794,11 @@ CATALOG: list[DriverModel] = [
                 "キャロウェイ ELYTE MAX FAST ドライバー", ["elyte|エリート", "fast|ファスト"], []),
     DriverModel("cw_elyte_td", "キャロウェイ", "ELYTE ◆◆◆", "2025",
                 "キャロウェイ ELYTE トリプルダイヤモンド ドライバー",
-                ["elyte|エリート", "◆|トリプルダイヤ|triplediamond"], []),
+                ["elyte|エリート", _ELYTE_TD], []),
     DriverModel("fw_cw_elyte", "キャロウェイ", "ELYTE FW", "2025",
                 "キャロウェイ ELYTE フェアウェイウッド", ["キャロウェイ|callaway", "elyte|エリート"],
-                ["elytex|エリートx", "fast|ファスト", "titanium|チタニウム",
-                 "◆|トリプルダイヤ|triplediamond"], category="fw"),
+                [_ELYTE_X, "fast|ファスト", "titanium|チタニウム",
+                 _ELYTE_TD], category="fw"),
     DriverModel("fw_cw_elytex", "キャロウェイ", "ELYTE X FW", "2025",
                 "キャロウェイ ELYTE X フェアウェイウッド", ["elytex|エリートx"], [], category="fw"),
     DriverModel("fw_cw_elyte_maxfast", "キャロウェイ", "ELYTE MAX FAST FW", "2025",
@@ -1950,9 +1958,18 @@ CATALOG: list[DriverModel] = [
     DriverModel("sw_cw_aismoke", "キャロウェイ", "PARADYM Ai SMOKE 7W/9W", "2024",
                 "キャロウェイ パラダイム Ai SMOKE フェアウェイウッド",
                 ["aismoke|aiスモーク", _SW_NUM], _SW_EXC, category="shortwood"),
+    # 2026-09-05: shortwood だけ excludes が本数系のみで、**ELYTE X も ◇◇◇ も MAX FAST も
+    # 飲み込んでいた**（driver/fw は最初から excludes を持っていた＝カテゴリ横断の漏れ）。
+    # 実測（120日・完品32件）: 無印 n=21 中央32,000 ／ X n=6 中央30,400 ／
+    #                        ◇◇◇ n=3 中央60,000（無印の1.9倍）
+    # 混ざった結果、部門レポートの中央が 40,850 まで跳ね、
+    # 販売中29,999が「73%の割安圏」に見えていた（実際は無印中央32,000の94%）。
     DriverModel("sw_cw_elyte", "キャロウェイ", "ELYTE 7W/9W", "2025",
                 "キャロウェイ ELYTE フェアウェイウッド",
-                ["elyte|エリート", _SW_NUM], _SW_EXC, category="shortwood"),
+                ["elyte|エリート", _SW_NUM],
+                _SW_EXC + [_ELYTE_X, _ELYTE_TD, "fast|ファスト",
+                           "titanium|チタニウム", "10k", "mini|ミニ"],
+                category="shortwood"),
     DriverModel("sw_ping_g425", "ピン", "G425 7W/9W", "2021",
                 "ピン G425 フェアウェイウッド",
                 ["g425", _SW_NUM], _SW_EXC, category="shortwood"),
