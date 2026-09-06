@@ -151,5 +151,9 @@ for c in cands:
     sb = " 📦着払い" if c.get("shipping_buyer") else ""
     print(f"  {c['label']} ¥{c['price']:,} ({c['ratio']:.0%}) 状態{c['cond']} "
           f"{c['age_h']}h前 7日{c['w7_sold']}本{au}{sb} | {c['title'][:38]}")
+    # 2026-09-06: URLを出していなかったため、ユーザーが候補を自力で探す羽目になっていた
+    # （9/5の本命 SIM2 MAX レスキュー 4U は結局見つけられず、他の人に買われた）。
+    # 候補は**必ずURL付き**で出す。
+    print(f"      https://jp.mercari.com/item/{c['id']}")
 if errors:
     print("失敗:", errors)
