@@ -24,6 +24,7 @@ import argparse
 import concurrent.futures as cf
 import json
 import os
+import re
 import statistics
 import sys
 
@@ -43,6 +44,26 @@ CHEAP_LO, CHEAP_HI = 0.35, 0.80
 # 完品の実売がこの本数未満の機種は中央値を信用しない（割安圏の判定から外す）。
 # denominator_check.py の「n<3で中央値は語れない」と同じ基準。
 MIN_N_FOR_RATIO = 3
+
+# 2026-09-05に判明した構造課題への対処。この部門のキーは「◯◯ 7W/9W」で
+# **7Wと9Wを1つの中央値にまとめている**が、実際は値段が違う。
+#   ELYTE実測（120日・完品・無印）: 7W n=21 中央32,000 ／ 9W n=12 中央38,600（1.21倍）
+# 30日窓の実売4本のうち2本が9Wだったため中央が40,850に上振れし、
+# 7Wの販売中29,999が「73%の割安圏」に見えていた（実際は7W実勢の94%）。
+# → **割安率は同じ番手の中央値どうしで出す**。番手が判らない玉は従来どおり全体中央で見る。
+_W7_PAT = re.compile(r"7\s*w|w\s*7|7番|20\.5|21度|21°|21\.0")
+_W9_PAT = re.compile(r"9\s*w|w\s*9|9番|23\.5|24度|24°|ナインウッド")
+
+
+def loft_bucket(title: str):
+    """タイトルから 7W / 9W を判定する。両方・どちらも無しは None。"""
+    t = (title or "").lower()
+    has7, has9 = bool(_W7_PAT.search(t)), bool(_W9_PAT.search(t))
+    if has7 and not has9:
+        return "7W"
+    if has9 and not has7:
+        return "9W"
+    return None
 # ショートウッドの買いライン（2026-08-21のユーザー運用値）:
 # 同機種の5W相場×1.2以下なら割安。ここでは5W単独の相場を持っていないので
 # FWキー（3W/5W主体）の中央値を代理に使う。あくまで目安として出す
@@ -83,6 +104,17 @@ def scan_live(models, workers: int) -> list[dict]:
         row["head_median"] = round(statistics.median(hp)) if hp else None
         row["_active"] = sorted(
             [x for x in act if not x["head_only"]], key=lambda x: x["price"])
+        # 番手別の中央値（割安率を同じ番手どうしで出すため）
+        full = [x for x in sold if not x["head_only"]]
+        by = {"7W": [], "9W": []}
+        for x in full:
+            b = loft_bucket(x.get("title", ""))
+            if b:
+                by[b].append(x["price"])
+        for b in ("7W", "9W"):
+            row[f"med_{b}"] = (round(statistics.median(by[b]))
+                               if len(by[b]) >= MIN_N_FOR_RATIO else None)
+            row[f"n_{b}"] = len(by[b])
         return row
 
     out = []
@@ -151,11 +183,35 @@ def main() -> None:
         # SIM2 7W も表示「完品1本・中央30,000」→ 実測22本・中央23,000で、
         # 販売中22,800は99%。**その日の割安圏2件が両方とも偽物**だった。
         # denominator_check の「n<3で中央値は語れない」をこちらにも入れる。
+        # 2026-09-05: 割安率を**同じ番手の中央値どうし**で出す。
+        # この部門のキーは7Wと9Wを1つの中央値にまとめているが実際は値段が違う
+        # （ELYTE実測: 7W 32,000 ／ 9W 38,600 ＝ 9Wは1.21倍）。
+        # 9Wが混ざった日は中央が上振れし、7Wの玉が割安に見えていた。
+        hits = []
+        if "_active" in r:
+            for a in (r.get("_active") or []):
+                b = loft_bucket(a.get("title", ""))
+                base = (r.get(f"med_{b}") if b else None) or med
+                if not base:
+                    continue
+                ratio2 = a["price"] / base
+                if CHEAP_LO <= ratio2 <= CHEAP_HI:
+                    hits.append((a, base, b, ratio2))
+        r["_cheap_hits"] = hits
         if full < MIN_N_FOR_RATIO:
             state = f"⚠n={full}分母不足 " + state
-        elif med and lo and CHEAP_LO <= (rate or 9) <= CHEAP_HI:
+        elif hits:
             state = "★割安圏 " + state
             cheap.append(r)
+        elif ("_active" not in r and med and lo
+                and CHEAP_LO <= (rate or 9) <= CHEAP_HI):
+            # popularity.json 由来（明細なし）は全体中央で判定するしかない
+            state = "★割安圏(番手未判定) " + state
+            cheap.append(r)
+        # 番手別の中央値が両方そろっている機種は差を並べて出す（誤読防止）
+        m7, m9 = r.get("med_7W"), r.get("med_9W")
+        if m7 and m9:
+            state += f" [7W {m7:,}/9W {m9:,}]"
         if full >= 2 and (r.get("active") or 0) == 0:
             state = "品薄0件 " + state
             thin.append(r)
@@ -177,11 +233,12 @@ def main() -> None:
         print("  なし。この部門は値崩れしにくいので、出たら本命級です。")
     for r in cheap:
         med = r["sold_price_median"]
-        print(f"\n  ▼ {r['label']}（中央 {med:,}円）")
-        for a in (r.get("_active") or [])[:4]:
-            if a["price"] > med * CHEAP_HI:
-                break
-            print(f"     {a['price']:>7,}円 ({a['price']/med*100:.0f}%) "
+        m7, m9 = r.get("med_7W"), r.get("med_9W")
+        extra = (f"／7W {m7:,}・9W {m9:,}" if (m7 and m9) else "")
+        print(f"\n  ▼ {r['label']}（全体中央 {med:,}円{extra}）")
+        for a, base, b, ratio2 in (r.get("_cheap_hits") or [])[:4]:
+            tag = f"{b}中央{base:,}" if b else f"全体中央{base:,}"
+            print(f"     {a['price']:>7,}円 ({ratio2*100:.0f}% / {tag}) "
                   f"{ITEM_URL.format(id=a['id'])}")
             print(f"        {a['title'][:60]}")
         if "_active" not in r:
