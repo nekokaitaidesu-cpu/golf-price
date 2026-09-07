@@ -30,10 +30,11 @@ from golf_price.catalog import CATALOG_BY_KEY
 POP_PATH = os.path.join(CACHE_DIR, "popularity.json")
 
 # 自己在庫（flip-inventory と対応）。キーは catalog のもの
+# 2026-09-04に GT280（ヤフー37,000）と KING TEC-MD（メルカリ55,000）が両方売却済み。
+# 代わりに 2026-09-03のゴルフドゥセールで オリジナルワン ミニ 11.5° を仕入れた。
 OWNED = {
-    "yt_driver_gt280": "GT280 ミニドラ（実質32,646仕入）",
-    "yt_driver_king": "コブラ KING TEC-MD（実質40,775仕入）",
     "mn_ym_rmxvdm_steady": "RMX VD/M Steady（15,000仕入・2本目）",
+    "yt_driver_x13": "オリジナルワン ミニ 11.5°（実質23,062仕入・分岐24,762）",
 }
 
 
