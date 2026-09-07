@@ -1631,7 +1631,12 @@ CATALOG: list[DriverModel] = [
     DriverModel("yt_driver_fbl", "マスダ", "FBL", "—",
                 "マスダ FBL ドライバー", ["マスダ", "fbl"], []),
     DriverModel("yt_driver_x13", "テーラーメイド", "オリジナルワン ミニ", "—",
-                "テーラーメイド オリジナルワン ミニドライバー", ["テーラーメイド|taylormade", "オリジナルワン"], [], category="mini"),
+                "テーラーメイド オリジナルワン ミニドライバー",
+                # 2026-09-07: required が「オリジナルワン」カナのみで、実売の
+                # 大半を占める "Original One" / "ORIGINALONE" 英字表記を落として
+                # いた（実測100件中 9件しか拾えず 30日実売0本）。compact は空白を除去
+                # するので英字側は詰めた形で書く（_term_hit は正規表現でない）。
+                ["テーラーメイド|taylormade", "オリジナルワン|originalone"], [], category="mini"),
     DriverModel("yt_iron_t", "タイトリスト", "Tシリーズ", "—",
                 "タイトリスト Tシリーズ アイアン", ["タイトリスト|titleist", "tシリーズ"], [], category="iron"),
     DriverModel("yt_ut_x4", "テーラーメイド", "バーナーレスキュー", "—",
