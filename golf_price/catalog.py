@@ -1913,9 +1913,18 @@ CATALOG: list[DriverModel] = [
     DriverModel("sw_tm_stealth2", "テーラーメイド", "STEALTH2 7W/9W", "2023",
                 "テーラーメイド ステルス2 フェアウェイウッド",
                 ["stealth2|ステルス2", _SW_NUM], _SW_EXC, category="shortwood"),
+    # 2026-09-09実測: shortwood だけ MAX 分割が漏れていた（driver/fw/ut は分割済み）。
+    #   無印 7W n=47 中央 28,000 ／ MAX 7W n=49 中央 25,000（1.12倍）
+    #   無印 9W n=7  中央 52,000 ／ MAX 9W n=0（MAXに9Wの設定が無い）
+    # 差は Qi35 の MAX（無印と同値で分けなかった）と違い実在し、両バケツとも
+    # n≈50 と厚いので分割が正解。混在中央では 22,800 の玉が 80%（割安圏）に
+    # 見えていたが、MAX の分母 25,000 で割ると 91% で圏外になる。
     DriverModel("sw_tm_qi10", "テーラーメイド", "Qi10 7W/9W", "2024",
                 "テーラーメイド Qi10 フェアウェイウッド",
-                ["qi10", _SW_NUM], _SW_EXC, category="shortwood"),
+                ["qi10", _SW_NUM], _SW_EXC + ["max|マックス"], category="shortwood"),
+    DriverModel("sw_tm_qi10max", "テーラーメイド", "Qi10 MAX 7W/9W", "2024",
+                "テーラーメイド Qi10 MAX フェアウェイウッド",
+                ["qi10max", _SW_NUM], _SW_EXC, category="shortwood"),
     # 2026-08-31実測（7W完品36件）: **TOURモデルが混ざって中央値を上げていた**。
     #   無印(ツアーADカスタム込み) n=23 中央 29,800 ／ TOUR n=4 中央 38,500（+8,700）
     # 一方 **MAX は無印とほぼ同値**（MAX n=9 中央29,800 vs 無印29,800）なので分けない。
