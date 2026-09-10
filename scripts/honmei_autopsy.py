@@ -24,7 +24,7 @@ if hasattr(sys.stdout, "reconfigure"):
 
 from golf_price.cache import CACHE_DIR
 from golf_price.normalize import detect_head_only_desc, normalize
-from golf_price.scrapers.mercari import _dpop
+from golf_price.scrapers.mercari import _dpop, search_recent_raw
 
 PHOTO_DIR = os.path.join(CACHE_DIR, "photos")
 
@@ -36,6 +36,28 @@ def item_detail(item_id: str) -> dict:
                               "User-Agent": "Mozilla/5.0"}, timeout=15)
     r.raise_for_status()
     return r.json().get("data") or {}
+
+
+def auction_info(item_id: str, name: str) -> dict:
+    """オークション形式かどうかを検索APIの raw から引く。
+
+    **items/get には auction フィールドが無い**（2026-09-11に判明）。
+    検索APIの raw にだけ {bidDeadline, totalBid, highestBid, initialPrice} が入る。
+    そのため ID指定の検死だけで追いかけると 🔨 が落ち、入札で競り上がった価格を
+    「出品者が値上げした」と読み違える。実際に2026-09-08〜09のPARADYM 7Wで
+    2日連続やらかした（13,001→14,001→14,201 は入札。ユーザーが落札した）。
+
+    商品名をそのまま検索語にして id 一致で拾う。見つからなければ空 dict。
+    """
+    try:
+        rows, _ = search_recent_raw(" ".join((name or "").split())[:60],
+                                    "STATUS_ON_SALE", max_pages=1)
+    except Exception:
+        return {}
+    for raw in rows:
+        if raw.get("id") == item_id:
+            return raw.get("auction") or {}
+    return {}
 
 
 def main() -> None:
@@ -56,13 +78,18 @@ def main() -> None:
         photos = d.get("photos") or []
         hours = round((time.time() - int(d.get("created") or 0)) / 3600, 1)
         cond = (d.get("item_condition") or {}).get("name")
-        auction = {k: v for k, v in d.items() if "auction" in k.lower() and v}
+        # items/get には auction が無いので検索raw側から引く（auction_info 参照）
+        auction = auction_info(mid, d.get("name") or "")
         print(f"== {d.get('name', '')[:48]} [{mid}]")
         print(f"   ¥{int(d.get('price') or 0):,} status={d.get('status')} "
               f"いいね={d.get('num_likes')} 状態={cond} 出品{hours}h前 "
               f"写真{len(photos)}枚 部品検出={'★単品!' if head else 'なし'}")
         if auction:
-            print(f"   auction: {json.dumps(auction, ensure_ascii=False)[:160]}")
+            print(f"   🔨オークション（即決不可・入札制） 締切={auction.get('bidDeadline')} "
+                  f"入札{auction.get('totalBid')}件 現在額={auction.get('highestBid')} "
+                  f"開始額={auction.get('initialPrice')}")
+            print("      ※価格の上昇は『出品者の値上げ』ではなく入札。"
+                  "上限は 実売中央×0.9−送料 から先に決めて機械的に")
         print(f"   説明: {' '.join(desc.split())[:260]}")
         for i, url in enumerate(photos[:args.photos]):
             path = os.path.join(PHOTO_DIR, f"{mid}_{i}.jpg")
