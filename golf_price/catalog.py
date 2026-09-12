@@ -1697,9 +1697,20 @@ CATALOG: list[DriverModel] = [
     # required は正しいのに**KWの recall が足りず在庫ゼロと誤診**した実例。
     # 「Steady」を含むKWに変更（同じKWで実測5件を確認済み）。
     # → 教訓: 販売中0件を見たら、まずKWを変えて取りこぼしでないか確かめる
+    # ⚠2026-09-12: required が ["rmx", "steady…"] だけで**番手を見ていなかった**ため、
+    # 同じSteady Versionの**別クラブ**を吸っていた。実測40件のうち5件が誤り:
+    #   RMX VD/U Steady u5 15,000 ・ u6 20,000          （ユーティリティ）
+    #   RMX VD FW Steady TENSEI 18,800                   （フェアウェイウッド）
+    #   RMX VD/X Steady Ver ドライバー25年 26,000        （別モデルのドライバー）
+    #   RMX steady version 1W.5W.7W.5U 4本 60,000        （4本セット）
+    # 30日窓が薄い日にこれが効いて、**中央値が 25,000 → 17,500 に落ちて見えていた**
+    # （ユーザーの在庫機種なので出口判断が狂う）。実測すると VD/M だけで n=35・中央25,000。
+    # 対策は excludes でなく **required に番手 "vdm" を足す**方が確実。
+    # 誤りの5件は全て "vdm" を含まず、正しい35件と販売中5件は全て含む（実測確認済み）。
+    # compact が "/" を消すので **vdm** と詰めて書く（"vd/m" では絶対に当たらない）
     DriverModel("mn_ym_rmxvdm_steady", "ヤマハ", "RMX VD/M Steady Version", "2023",
                 "ヤマハ RMX VD/M Steady",
-                ["rmx", "steady|ステディ|短尺|43.5"], [], category="mini"),
+                ["rmx", "vdm", "steady|ステディ|短尺|43.5"], [], category="mini"),
 
     # ==================== チッパー ====================
     DriverModel("ch_ping_chipr", "ピン", "CHIPR", "2022",
