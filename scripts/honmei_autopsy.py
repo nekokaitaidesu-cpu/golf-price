@@ -84,6 +84,15 @@ def main() -> None:
         print(f"   ¥{int(d.get('price') or 0):,} status={d.get('status')} "
               f"いいね={d.get('num_likes')} 状態={cond} 出品{hours}h前 "
               f"写真{len(photos)}枚 部品検出={'★単品!' if head else 'なし'}")
+        # 出品者の出品数。2026-09-12実測(n=13)で、ヘッド単品と判定した8件は中央386件・
+        # 200件以上が6/8、完品と判定した5件は中央59件・200件以上が0/5に分かれた。
+        # とくに**説明文が無言だったヘッド単品3件は全て249件以上**で、
+        # 業者アカウントはテンプレ説明を使い開示しない傾向がある。
+        # まだ n=13 なので落とす条件には使わず、**写真を見る優先度**として出す。
+        seller = d.get("seller") or {}
+        nsell = seller.get("num_sell_items") or 0
+        mark = "  ⚠業者級（説明文が短いなら写真を必ず見る）" if nsell >= 200 else ""
+        print(f"   出品者: {(seller.get('name') or '')[:16]} / 出品中{nsell}件{mark}")
         if auction:
             print(f"   🔨オークション（即決不可・入札制） 締切={auction.get('bidDeadline')} "
                   f"入札{auction.get('totalBid')}件 現在額={auction.get('highestBid')} "
