@@ -33,7 +33,8 @@ POP_PATH = os.path.join(CACHE_DIR, "popularity.json")
 # 2026-09-04に GT280（ヤフー37,000）と KING TEC-MD（メルカリ55,000）が両方売却済み。
 # 代わりに 2026-09-03のゴルフドゥセールで オリジナルワン ミニ 11.5° を仕入れた。
 OWNED = {
-    "mn_ym_rmxvdm_steady": "RMX VD/M Steady（15,000仕入・2本目）",
+    # 2本目（純正TENSEI・15,000仕入）は 2026-09-03 に21,400で売却。今あるのは3本目
+    "mn_ym_rmxvdm_steady": "RMX VD/M Steady NX BLACK（実質20,100仕入・3本目）",
     "yt_driver_x13": "オリジナルワン ミニ 11.5°（実質23,062仕入・分岐24,762）",
 }
 
