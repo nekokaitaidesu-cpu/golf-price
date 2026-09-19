@@ -1,0 +1,44 @@
+# Memory index
+
+- [ユーザーのゴルフスタイル](user-golf-profile.md) — インドア練習専門・ラウンドなし（クラブ汚れない）、ぶっ飛び系アイアン好き、バッグSIM2統一志向
+- [メルカリ実売ソース](mercari-flea-source.md) — ③フリマ実売はメルカリAPI直叩き（DPoP）。売切最新5件＋販売中最安2件、失敗時Yahoo退避
+- [本命メモ運用](honmei-notes.md) — 「今日の本命」は honmei_notes/YYYY-MM-DD.md に日次保存（フォーマット・抽出ロジック込み）
+- [TP07ハンター](tp07-hunter-app.md) — ユーザー自作の高反発TP-07監視アプリ（6サイト横断・GitHub Pages）。2026-07-15に7,467円→3万円級の金ロフト個体を発見した実績
+- [現物チェックの教訓](honmei-genbutsu-check.md) — タイトル検証だけでは不十分。説明文のヘッド単品＋写真の傷＋「いいね多数×売れ残り」減点で最終判定（items/getで取れる）
+- [出品ヘッドカバー方針](shuppin-headcover-policy.md) — カバーは本体に同梱で出品（別売りしない）。2026-07-21転換。例外は人気純正の分売相談のみ
+- [話し方の好み](speech-style-polite.md) — ユーザーは「です・ます」の丁寧口調を好む（セッションまたぎで恒常）
+- [利益計算ブック](profit-calc-workbook.md) — ゴルフ利益計算.xlsm（マクロ付き）を使う。旧xlsxは廃止、xlsx保存でマクロが消えるので注意
+- [転売在庫](flip-inventory.md) — 在庫と出品作戦（Qi10 FW 3W／ステルスプラス+HZRDUS／SIM2 MAX無印6本購入進行中／VD40・G700・ゼクシオクロス売却側）＋探し物（VD40競合・ミズノ枠）
+- [7Wショートウッドの狙い目](fw-loft-head-premium.md) — 7Wは5Wの約1.23倍で品薄・回転も速い（10機種一致）。買いラインは5W相場×1.2倍。9Wは回転遅く対象外
+- [ゴルフドゥのセール運用](golfdo-sale-0903.md) — 予告在庫は消えるがセール当日は買える。開始時刻に張り付き、事前に順位表を作る。上位は90分で消える
+- [買いラインは1.30倍](buy-line-1_30x.md) — 実績23件から確定。想定売値÷実質価格が1.30倍未満は買わない（1.15倍未満は5件中3件が赤字）
+- [パターの分母は要注意](putter-denominator-caution.md) — 新設3日で分母を3回間違えた。当面「本命」に出さず、出すなら中央値の内訳を添える
+- [ウェッジ・パターは解説を厚く](wedge-putter-explain.md) — ユーザーはこの2部門の相場に疎い。本命で挙げたら実勢レンジ・ライン内の格・仕入れ線を必ず添える
+- [ウェッジ・パター部門](wedge-putter-dept.md) — 採用基準は90日実売の中央10,000円以上。パターはカバー単品が2,000〜25,000円で売れるので分母が壊れやすい
+- [値下げ依頼ボタン常用](offer-lowball-tactic.md) — 文章なし最大-20%をダメ元で常時。判定は「表示価格」でなく「表示価格×0.8」で行う
+- [無言のヘッド単品は価格比で見抜く](silent-head-only-price-ratio.md) — 出品価格 ÷ ヘッド単品中央 が0.9〜1.1ならヘッド単品。写真より先に計算する
+- [グレード混在はカテゴリ横断で抜ける](grade-split-cross-category.md) — 無印/MAXの分割が driver・fw は済で ut だけ漏れていた。excludes を横断で突き合わせる
+- [値引き宣言は売れなくなる](price-cut-promise-kills-sales.md) — 「少しずつ値下げします」でいいね83の待機列ができる。最安なのに売れないなら自分の出品を検死する
+- [裸のトークン除外は罠](bare-token-excludes-trap.md) — excludes の "x"/"tour" がシャフト名を巻き込む。型名の形で書き、受け皿とセットで直す
+- [分母は2段階で割れる](denominator-two-stage-split.md) — グレードで分けた先でさらに番手で割れる。FW/UTは1セットで見る
+- [自分の集計も分母検査する](thin-denominator-fake-cheap.md) — n=1の中央値で偽の割安圏が出ていた。急に出た候補は集計の穴を疑う
+- [二正面は手取りを揃える](dual-listing-price-parity.md) — メルカリ価格=ヤフー価格÷0.9。揃えずにKING TEC-MDで8,300円取りこぼした
+- [30日窓の中央値は上振れする](30day-median-overstates.md) — 割安率は入口の目安。推奨前に必ず120日で測り直す
+- [分母のない割安は罠](no-comps-no-deal.md) — 「訳あり」は同じ訳ありの実売が過去にあるか先に見る
+- [ヘッド単品出品者の指紋](head-only-seller-fingerprints.md) — 「名器！」と「-シャフト無し」+NCNR定型文の2人。見たら分母をヘッド側に切り替える
+- [ヘッド単品は「どちらの分母か」](which-denominator-not-whether.md) — 比0.9未満ならヘッド単品の分母で買える。見送り一括にしない
+- [ショートウッドの7W/9W混在](shortwood-7w-9w-mixed.md) — 9Wは7Wの約1.2倍。割安圏に出た玉は番手を確認してから測り直す（未解決の構造課題）
+- [候補は必ずURL付きで](always-include-item-url.md) — 品名と価格だけでは辿り着けない。9/5の本命はURL無しで見つけられず他人に買われた
+- [コーパスだけでは誤検出を測れない](corpus-not-enough-for-false-positives.md) — 96件で0件でも完品を落とす。自作の反例と両方通す
+- [required は正規表現でない](term-hit-is-not-regex.md) — compact が空白を除くので英字は詰めて書く。`originalone` が正解
+- [キャメロンの偽物](counterfeit-scotty-cameron.md) — 中央の35〜45%は部品でなくコピー品を疑う。出品者の指紋6つ
+- [既存パターンも誤検出を測る](test-existing-patterns-on-complete-clubs.md) — 8か月動いた先読みが完品を落としていた。検出と本文が食い違ったら追う
+- [写真スクショ転載の詐欺](screenshot-photo-scam.md) — 画面UIが写る＝他人の出品から転載。現物なしの指紋
+- [カタログのコメントは次行のもの](catalog-comment-belongs-to-next-key.md) — 隣のモデルの実測を流用しない。分割は機種ごとに測る
+- [抑止パターンどうしが衝突する](suppressor-patterns-collide.md) — 検出は当たっていたのに「シャフト:◯◯」の抑止が打ち消していた。すり抜け＝未知パターンとは限らない
+- [オークションは検死では見えない](auction-invisible-in-item-get.md) — items/getにauctionが無い。価格上昇を「値上げ」と読むな。連日追うのは正常
+- [楽天は商品ページの「種別」欄を見る](rakuten-shubetsu-field.md) — シャフト「-」は情報不足でなく部品が無い意味。重量300g未満も同じサイン
+- [「カバー付」は完品の証拠でない](headcover-not-proof-of-complete.md) — ヘッド単品にもカバーは付く。G410 4Uは説明文無言・写真だけが証拠だった
+- [無言のヘッド単品は業者に偏る](bulk-seller-silent-head-only.md) — 出品数200件超は写真を必ず見る（暫定n=13。説明文が無言の3件は全て249件以上）
+- [オークションは上限1発](auction-one-shot-cap-bid.md) — ユーザーは上限額を1回入れて放置する流儀。提案は上限額1つでよい、取れなくても失敗扱いしない
+- [グローレ飲み込み](gloire-series-swallow.md) — 無印SIM/ステルスのキーがグローレを吸う。7Wは修正済・DR/FW/UT/アイアンに7キー残り。find_swallowingはショートウッドで効かない
