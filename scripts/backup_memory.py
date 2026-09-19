@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 """auto-memory（PCローカル）をリポジトリの memory/ にコピーして引き継げる形にする。
 
-  python scripts/backup_memory.py          # 差分を表示してコピー
-  python scripts/backup_memory.py --check  # コピーせず差分だけ見る
+  python scripts/backup_memory.py           # 差分を表示してコピー
+  python scripts/backup_memory.py --check   # コピーせず差分だけ見る
+  python scripts/backup_memory.py --commit  # コピー＋ memory/ だけを commit & push
+
+日次の「今日の本命」の最後（メモ保存と同じタイミング）に --commit で回す。
+差分が無ければ何もしないので、毎日叩いて構わない。
 
 auto-memory の実体は
 `%USERPROFILE%\\.claude\\projects\\C--Users-User-Claude-golf-price\\memory` にあり、
@@ -15,6 +19,7 @@ import filecmp
 import os
 import re
 import shutil
+import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -47,6 +52,8 @@ def scan(path: str) -> list[str]:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true", help="コピーせず差分と検査だけ")
+    ap.add_argument("--commit", action="store_true",
+                    help="コピー後に memory/ だけを commit & push（差分が無ければ何もしない）")
     args = ap.parse_args()
 
     if not os.path.isdir(SRC):
@@ -82,7 +89,29 @@ def main() -> None:
         shutil.copy2(os.path.join(SRC, n), os.path.join(DEST, n))
     for n in gone:  # ローカルで削除されたメモはリポジトリからも消す
         os.remove(os.path.join(DEST, n))
-    print(f"→ {DEST} に反映した。git add memory/ してコミットすること")
+    if not (new or changed or gone):
+        print("差分なし。何もしない")
+        return
+    print(f"→ {DEST} に反映した")
+
+    if not args.commit:
+        print("   git add memory/ してコミットすること")
+        return
+
+    # memory/ だけをコミットする。本命メモやカタログの編集を巻き込まないため
+    # パス指定で add → commit する（-a は使わない）
+    def git(*a: str) -> int:
+        return subprocess.run(["git", "-C", REPO, *a]).returncode
+
+    msg = f"memory: バックアップ（新規{len(new)}・更新{len(changed)}・削除{len(gone)}）"
+    if git("add", "--", "memory") != 0:
+        sys.exit("git add に失敗")
+    if git("commit", "-q", "-m", msg, "--", "memory") != 0:
+        sys.exit("git commit に失敗")
+    if git("push", "-q", "origin", "HEAD") != 0:
+        print("⚠ push に失敗（コミットは済んでいる。あとで push すること）")
+        return
+    print(f"→ commit & push 済み: {msg}")
 
 
 if __name__ == "__main__":
