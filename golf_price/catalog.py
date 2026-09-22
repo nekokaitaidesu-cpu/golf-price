@@ -447,8 +447,14 @@ CATALOG: list[DriverModel] = [
                 "ピン i230 アイアン", ["i230"], [], category="iron"),
     DriverModel("ir_ping_g430", "ピン", "G430 アイアン", "2023",
                 "ピン G430 アイアン", ["g430"], [], category="iron"),
+    # 2026-09-23: excludes が裸の "t100s" で、**「T100 S200」（DG S200挿しの正規T100）を
+    # 落としていた**（compactが空白を除くので "t100s200" が "t100s" を含む）。`=t100s` に修正。
+    # 併せて mixed_median=True。90日実売17件が 2019:45,000／2021:63,000／2023:80,000／
+    # 2025:98,800〜128,999 の4世代混在で、レンジ12.3倍・中央が日ごとに 66,000⇔82,750 と振れる。
+    # 双子キー yt_iron_t100（条件は同じで `=t100s` だけ正しかった）は同日に削除。
     DriverModel("ir_ti_t100", "タイトリスト", "T100", "2023",
-                "タイトリスト T100 アイアン", ["t100"], ["t100s"], category="iron"),
+                "タイトリスト T100 アイアン", ["t100"], ["=t100s"], category="iron",
+                mixed_median=True),
     DriverModel("ir_ti_t200", "タイトリスト", "T200", "2023",
                 "タイトリスト T200 アイアン", ["t200"], [], category="iron",
                 mixed_median=True),
@@ -1001,8 +1007,6 @@ CATALOG: list[DriverModel] = [
                 "タイトリスト T250 アイアン", ["t250"], [], category="iron"),
     DriverModel("yt_iron_t150", "タイトリスト", "T150", "—",
                 "タイトリスト T150 アイアン", ["t150"], [], category="iron"),
-    DriverModel("yt_iron_t100", "タイトリスト", "T100", "—",
-                "タイトリスト T100 アイアン", ["t100"], ["=t100s"], category="iron"),
     DriverModel("yt_driver_prototype", "プロギア", "RS MAX PROTOTYPE ♣", "—",
                 "プロギア RS MAX PROTOTYPE ♣ ドライバー", ["プロギア|prgr", "prototype"], []),
     DriverModel("yt_iron_xforgedm", "キャロウェイ", "X FORGED MAX", "—",
@@ -2188,7 +2192,52 @@ def find_swallowing() -> list[tuple[str, str]]:
         for b in CATALOG:
             if a is b or a.category != b.category or a.brand != b.brand:
                 continue
-            if _catalog_match(b.keyword, a) and not _catalog_match(a.keyword, b):
+            if (_catalog_match(_probe_title(b), a)
+                    and not _catalog_match(_probe_title(a), b)):
+                out.append((a.key, b.key))
+    return out
+
+
+def _probe_title(m: "DriverModel") -> str:
+    """キー同士を突き合わせるための「そのキーらしい実タイトル」を作る。
+
+    2026-09-23発見。`_catalog_match` はカテゴリごとに追加の門を持っており、
+    **アイアンは `looks_like_iron_set()`（本数・番手レンジの表記）、
+    ショートウッドは番手（7W/9W）が必須**。keyword をそのまま当てる検査
+    （find_swallowing / find_mutual_duplicates）は、この門で必ず False になるため、
+    **アイアンとショートウッドの重複・包含を1件も検出できていなかった**
+    （T100 の双子キーは検査をすり抜け、楽天表に中央値の違う2行として現れて初めて気付いた）。
+    """
+    t = m.keyword
+    if m.category == "iron":
+        t += " 5-P 6本セット"
+    elif m.category == "shortwood":
+        t += " 7W"
+    return t
+
+
+def find_mutual_duplicates() -> list[tuple[str, str]]:
+    """**互いの keyword に互いがマッチする**キー対を返す（実質同一機種）。
+
+    2026-09-23発見の穴。`find_duplicates()` は条件の完全一致しか見ず、
+    `find_swallowing()` は「片方向だけ飲み込む」形しか拾わない
+    （判定が `_catalog_match(b.keyword, a) and not _catalog_match(a.keyword, b)` のため、
+    **相互にマッチする対は not 条件で落ちる**）。その結果、
+    excludes が `['t100s']` と `['=t100s']` のように**書き方だけ違う双子キー**が
+    両方の検査を素通りしていた。
+
+    実害: 同じ機種の行が2つ出て、**実売本数も販売中も二重計上**され、
+    中央値が2種類並ぶ（2026-09-22の楽天表で T100 が 82,750 と 76,000、
+    G410 PLUS が2行）。23対が残っていた。
+    """
+    from .service import _catalog_match
+    out: list[tuple[str, str]] = []
+    for i, a in enumerate(CATALOG):
+        for b in CATALOG[i + 1:]:
+            if a.category != b.category or a.brand != b.brand:
+                continue
+            if (_catalog_match(_probe_title(b), a)
+                    and _catalog_match(_probe_title(a), b)):
                 out.append((a.key, b.key))
     return out
 
