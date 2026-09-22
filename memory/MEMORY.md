@@ -44,3 +44,4 @@
 - [グローレ飲み込み](gloire-series-swallow.md) — 無印SIM/ステルスのキーがグローレを吸う。7Wは修正済・DR/FW/UT/アイアンに7キー残り。find_swallowingはショートウッドで効かない
 - [メモのバックアップ](memory-backup-to-repo.md) — auto-memoryはローカルのみ。scripts/backup_memory.py でリポジトリの memory/ へ。復旧手順は RECOVERY.md
 - [薄い部門の死角](thin-category-blind-spot.md) — ショートウッド/ミニドラは監視条件を満たさず日次候補にもLINEにも乗らない。9/18にQi10 7W 15,800（1.73倍）を取りこぼし
+- [重複検査の盲点](catalog-duplicate-detectors-blind.md) — 検査がアイアン/ショートウッドで空振りしていた。修正後に相互重複42対・包含75対が表面化（大半アイアン・未着手）
