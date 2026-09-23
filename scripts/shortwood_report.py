@@ -35,6 +35,7 @@ if hasattr(sys.stdout, "reconfigure"):
 from golf_price.cache import CACHE_DIR
 from golf_price.catalog import CATALOG, CATALOG_BY_KEY
 from golf_price import popularity
+from golf_price.normalize import normalize
 from golf_price.scrapers import mercari
 
 POP_PATH = os.path.join(CACHE_DIR, "popularity.json")
@@ -78,16 +79,85 @@ FW_COUNTERPART = {
 }
 
 
+# 2026-09-23: **部門レポートは実物の4割しか見ていなかった**。
+# メルカリ検索は「タイトル＋説明文にキーワードの語が含まれる」出品しか返さないため、
+# `キャロウェイ ELYTE フェアウェイウッド` では
+# 「美品 ELYTE 7w 21 度 フェアウェイ Callaway」（キー判定は True）が取得できない。
+# 実測（30日・4機種）: 正式キーワードのみ 8/12/23/18件 → 短縮を足すと 16/32/48/46件。
+# 9/18に Qi10 7W 15,800円（1.73倍）を取りこぼした原因もこれ。
+# → 「モデル名＋番手」の短縮クエリを足し、**IDで和集合**を取る。
+_BRAND_WORDS = ("テーラーメイド", "taylormade", "キャロウェイ", "callaway",
+                "ピン", "ping", "タイトリスト", "titleist", "ダンロップ", "dunlop")
+_CAT_WORDS = ("フェアウェイウッド", "フェアウェイ", "ウッド")
+
+
+def short_queries(m) -> list[str]:
+    """`<モデル名> 7W` / `<モデル名> 9W` の短縮クエリを作る。"""
+    core = m.keyword
+    for w in _BRAND_WORDS + _CAT_WORDS:
+        core = core.replace(w, " ")
+    core = " ".join(core.split())
+    if not core:
+        return []
+    return [f"{core} 7W", f"{core} 9W"]
+
+
+# 短縮クエリ（「G430 7W」等）は**シャフト単品を大量に連れてくる**。
+# 「PING TOUR 2.0 CHROME 65 FLEX S **7W用**」「フジクラMCF **PING7W(60S)用**」の形で、
+# 既存の is_parts_junk では落ちない（2026-09-23に G430 7W の最安が 9,000円＝27% と
+# 表示されて発覚。中身はシャフトだった）。番手＋「用」は**そのクラブ用の部品**の意味。
+_FOR_PART = re.compile(r"(?:\d\s*w|\d\s*番w?|ut|ユーティリティ|ドライバー|dr)用")
+# 「(60S)用」「65S用」のように**スペック＋用**で終わる形もシャフト（番手が無い書き方）
+_SPEC_FOR = re.compile(r"(?:\)|\d\s*[sxr])\s*用")
+
+
+def _looks_like_shaft(title: str) -> bool:
+    """短縮クエリが連れてくる「◯◯用」シャフトを落とす。
+
+    ⚠ 「シャフト」の語だけで落とすと **「純正シャフト付き」の完品**を巻き込む
+    （2026-09-23に実際にやらかした）。**「のみ／単品」の形だけ**を拾うこと。
+    """
+    t = normalize(title)
+    if "シャフトのみ" in t or "シャフト単品" in t:
+        return True
+    if _FOR_PART.search(t) or _SPEC_FOR.search(t):
+        return True
+    # 「PING G430 ALTA J CB BLACK シャフト 9W S」のように**「用」も「のみ」も無い**
+    # シャフト出品がある。完品と分ける手掛かりは「装着を示す語」と「クラブ固有の情報」:
+    #   完品は ロフト(度)・ヘッドカバー・「シャフト付き」を書き、シャフト単品は書かない
+    if "シャフト" in t:
+        attached = any(k in t for k in ("付き", "付属", "装着", "込み", "つき"))
+        club_info = any(k in t for k in ("度", "ロフト", "カバー"))
+        if not attached and not club_info:
+            return True
+    return False
+
+
+def _search_union(m, status: str, since: float) -> list[dict]:
+    """正式キーワード＋短縮クエリを投げ、item id で重複を除いて返す。
+
+    短縮クエリで増えるぶんには部品が混ざるので、ここで「◯◯用」のシャフトを落とす。
+    """
+    seen: dict[str, dict] = {}
+    truncated = False
+    for kw in [m.keyword] + short_queries(m):
+        raw, tr = mercari.search_recent_raw(
+            kw, status, price_min=popularity.MIN_PRICE,
+            max_pages=popularity.MAX_PAGES, stop_before=since)
+        truncated = truncated or tr
+        for i in raw:
+            if _looks_like_shaft(i.get("name") or ""):
+                continue
+            seen.setdefault(i["id"], i)
+    return list(seen.values()), truncated
+
+
 def scan_live(models, workers: int) -> list[dict]:
     """メルカリを直接叩いて、販売中の明細まで持った行を作る。"""
     def one(m):
         since = popularity.time.time() - 30 * 86400
-        sold_raw, st = mercari.search_recent_raw(
-            m.keyword, "STATUS_SOLD_OUT", price_min=popularity.MIN_PRICE,
-            max_pages=popularity.MAX_PAGES, stop_before=since)
-        act_raw, at = mercari.search_recent_raw(
-            m.keyword, "STATUS_ON_SALE", price_min=popularity.MIN_PRICE,
-            max_pages=popularity.MAX_PAGES, stop_before=since)
+        sold_raw, st = _search_union(m, "STATUS_SOLD_OUT", since)
+        act_raw, at = _search_union(m, "STATUS_ON_SALE", since)
         sold = popularity._pick(sold_raw, m, popularity.MIN_PRICE, since)
         act = popularity._pick(act_raw, m, popularity.MIN_PRICE, since)
         row = {"key": m.key, "label": f"{m.brand} {m.label}", "brand": m.brand}
