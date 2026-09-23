@@ -45,3 +45,4 @@
 - [メモのバックアップ](memory-backup-to-repo.md) — auto-memoryはローカルのみ。scripts/backup_memory.py でリポジトリの memory/ へ。復旧手順は RECOVERY.md
 - [薄い部門の死角](thin-category-blind-spot.md) — ショートウッド/ミニドラは監視条件を満たさず日次候補にもLINEにも乗らない。9/18にQi10 7W 15,800（1.73倍）を取りこぼし
 - [重複検査の盲点](catalog-duplicate-detectors-blind.md) — 検査がアイアン/ショートウッドで空振りしていた。修正後に相互重複42対・包含75対が表面化（大半アイアン・未着手）
+- [検索が届いていない](search-keyword-misses-listings.md) — 正式キーワードだけでは実物の4割。題名の短い安い出品ほど漏れる。shortwoodは和集合検索に修正済み、他部門は未対応
