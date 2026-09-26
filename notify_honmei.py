@@ -269,6 +269,10 @@ def main() -> None:
                     help="LINE送信せず表示のみ。stateも更新しない")
     args = ap.parse_args()
 
+    # notify.log は「LINEで来たあれ何？」を引く唯一の記録なのに時刻が無く、
+    # 2026-09-26に9/25の通知を追えなかった。実行ごとに日時見出しを残す。
+    print(f"\n===== {time.strftime('%Y-%m-%d %H:%M:%S')} notify_honmei 実行 =====")
+
     watch = load_watchlist()
     print(f"監視 {len(watch)} 機種: "
           + " / ".join(e["row"]["label"] for e in watch[:5]) + " …")

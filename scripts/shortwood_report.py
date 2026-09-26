@@ -306,11 +306,18 @@ def main() -> None:
         m7, m9 = r.get("med_7W"), r.get("med_9W")
         extra = (f"／7W {m7:,}・9W {m9:,}" if (m7 and m9) else "")
         print(f"\n  ▼ {r['label']}（全体中央 {med:,}円{extra}）")
+        hm = r.get("head_median")
         for a, base, b, ratio2 in (r.get("_cheap_hits") or [])[:4]:
             tag = f"{b}中央{base:,}" if b else f"全体中央{base:,}"
             print(f"     {a['price']:>7,}円 ({ratio2*100:.0f}% / {tag}) "
                   f"{ITEM_URL.format(id=a['id'])}")
             print(f"        {a['title'][:60]}")
+            # 題名が無言のヘッド単品は価格比で見抜く（2026-09-26に実害）。
+            # G430 MAX 9W 29,000 が「9W中央36,250の80%」で割安圏に出たが、
+            # 説明文は「9Wヘッドのみ」。題名だけでは head_only が立たない。
+            if hm and 0.90 <= a["price"] / hm <= 1.10:
+                print(f"        ⚠ヘッド単品中央 {hm:,} の {a['price']/hm:.2f}倍"
+                      "＝ヘッド単品の価格帯。説明文と写真のホーゼルを必ず確認")
         if "_active" not in r:
             print("     （明細は --live で出ます）")
 
