@@ -48,3 +48,4 @@
 - [検索が届いていない](search-keyword-misses-listings.md) — 正式キーワードだけでは実物の4割。題名の短い安い出品ほど漏れる。shortwoodは和集合検索に修正済み、他部門は未対応
 - [シャフト名はメーカー刻印と突合](shaft-brand-maker-mismatch.md) — VENTUS=フジクラ。三菱刻印と両立しない。説明文「VENTUS 6R」が実物は三菱TENSEIのLフレックスだった
 - [在庫の話は日次に混ぜない](no-inventory-talk-in-daily.md) — 傾向・本命では在庫の価格推移/値付け助言を書かない。聞かれたときだけ（2026-09-27指示）
+- [カーボンクラウンの欠損は割安圏の常連](carbon-crown-damage-cluster.md) — GT2/GT3/Qi10世代は40〜70%帯にヒビ・欠けが常駐。4日で3件。分母より先にクラウンの写真
