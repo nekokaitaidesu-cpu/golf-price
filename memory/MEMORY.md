@@ -49,3 +49,4 @@
 - [シャフト名はメーカー刻印と突合](shaft-brand-maker-mismatch.md) — VENTUS=フジクラ。三菱刻印と両立しない。説明文「VENTUS 6R」が実物は三菱TENSEIのLフレックスだった
 - [在庫の話は日次に混ぜない](no-inventory-talk-in-daily.md) — 傾向・本命では在庫の価格推移/値付け助言を書かない。聞かれたときだけ（2026-09-27指示）
 - [カーボンクラウンの欠損は割安圏の常連](carbon-crown-damage-cluster.md) — GT2/GT3/Qi10世代は40〜70%帯にヒビ・欠けが常駐。4日で3件。分母より先にクラウンの写真
+- [楽天の最安は消える](rakuten-cheapest-is-transient.md) — A型=何日も残る幽霊、B型=照合後1時間で売れる本物。照合と購入判断は同じ時間内に
