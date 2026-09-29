@@ -27,3 +27,10 @@ excludes=["max","ls"]、FW `fw_tm_qi10` は excludes=["max"] と分けてあっ�
 ②受け皿キーの実売がゼロでないか ③`find_duplicates()` と `find_swallowing()` を実行。
 
 関連: [[putter-denominator-caution]] [[silent-head-only-price-ratio]]
+
+**2026-09-29 追記: shortwood カテゴリが未対応だった。**
+ショートウッドレポートが「Ai SMOKE 7W 中央34,000 の65%」として 22,000 を割安圏に出したが、
+その玉は **PARADYM Ai SMOKE MAX FAST**（軽量シニア向けの別グレード）。
+実測120日: 無印/MAX の 7W n=35 中央 **33,070** に対し **MAX FAST は n=19 中央 28,455**。
+正しく測ると77%・1.21倍で不合格だった。横断チェックは driver/fw/ut で止まっており、
+**shortwood は未実施**。ELYTE・Qi35 など軽量版のある機種で同じ漏れが疑われる。
