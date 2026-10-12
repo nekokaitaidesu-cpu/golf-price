@@ -25,3 +25,14 @@ metadata:
 **How to apply:** 割安圏が出たらまず題名とキーが同じ機種か見る。ショートウッドの包含検査は「◯◯ 7W」の実タイトルを
 `service._catalog_match` に当てて測る。新しい世代キーを足すときは同名シリーズ（グローレ等）を excludes に入れる。
 関連: [[grade-split-cross-category]] [[bare-token-excludes-trap]] [[thin-denominator-fake-cheap]]
+
+**2026-10-12 追記: ミニドラのキーが FW を飲み込んでいた。**
+`QUANTUM MINI`（ミニドライバー）が **QUANTUM MINI SPINNER（7W/9W/11W のフェアウェイウッド）**を
+吸っており、MINI SPINNER 9W の 39,800 が「ミニドラの★割安圏80%」として出た。
+実際は MINI SPINNER 9W の実売 ≒ 37,900 で **105%＝割安でも何でもない**。
+「MINI」は飲み込みやすい語。**ミニドラ部門の★は品名に SPINNER が無いか必ず確認**する。
+
+**同日もう1件、題名マッチの新しい型:**
+「PING G425 MAX 5w (**G440 7W**の未使用標準シャフト付き)」が G440 7W の割安圏に出た。
+**他機種の名前が「付属品の説明」として題名の括弧内に入る**ケースで、
+機種名マッチは括弧の中まで見ないと誤る。
