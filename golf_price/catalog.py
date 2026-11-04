@@ -93,6 +93,18 @@ _SW_NUM = ("=7w|=w7|=7番|=20.5|=21度|=21°"
 # ウェッジ・パター部門の共通除外。ウェッジは「52度58度 2本セット」のような
 # 複数本まとめ売りが多く、1本あたりの相場を壊す（中央値が上振れする）
 _WP_EXC = ["本セット", "セット売り"]
+# ゼロトルク系パター（2026-11-04追加）の共通トークン。既存キーの excludes にも使う
+# 題名の実例:「スクエア2 ジェイルバード」「square 2 jailbird」「スクエアトゥスクエア」
+_S2S = "square2|squareto|スクエア2|スクエアトゥ|スクエアツー|s2s"
+# キャメロンの OC（onset center・"low torque"）。'=oc' は単語境界で、
+# 「PHANTOM 5OC」「FastbackOC」のように数字・語に密着した表記は個別に書く
+_OC = "=oc|11roc|5oc|fastbackoc|ファストバックoc|onsetcenter|オンセットセンター"
+# ⚠ ゼロトルク系の出品は**題名に「パター」を書かないものが多い**（2026-11-04実測:
+#   Spider ZT/OC/LAB/S2Sの実例115題名中、パター無しが大半）。パター専業ブランド・
+#   パター専用の型名に限り、club= でその語を種別語として認める。
+#   代償として「LAB GOLF カバー DF3」(15,000) のような裸のカバーが入り得るが、
+#   is_parts_junk に掛からない形は _drop_low_outliers（中央の35%未満）が落とす
+_LAB = "lab|ラブゴルフ"
 
 # 複数本セットは1本あたりの相場を壊すので除外（中央値が上振れする）。
 # 2026-08-21の初回ライブ集計で、G425の完品実売が
@@ -2069,6 +2081,7 @@ CATALOG: list[DriverModel] = [
     # PLD Milled アンサー(33,000〜38,000)の**三層**で、mixed_median の典型だった。
     # ライン別（PLD Milled / Sigma2）で持つ方が正しいので総称キーは作らない。
     # 不採用（薄すぎ）: Spider X 5本 / 2ボール 4本 / Ai-ONE 1本
+    # 2026-11-04: ゼロトルク系12キーを末尾に追加（下の「ゼロトルク系」節）
     DriverModel("pt_sc_specialselect", "スコッティキャメロン", "スペシャルセレクト", "2020",
                 "スコッティキャメロン スペシャルセレクト パター",
                 ["specialselect|スペシャルセレクト"], _WP_EXC, category="putter"),
@@ -2092,7 +2105,7 @@ CATALOG: list[DriverModel] = [
                 "スコッティキャメロン ファントム パター",
                 ["phantom|ファントム"],
                 _WP_EXC + ["phantomx|ファントムx", "ファントム125|phantom125",
-                           "futura|フューチュラ"],
+                           "futura|フューチュラ", _OC],
                 category="putter"),
     DriverModel("pt_sc_phantomx", "スコッティキャメロン", "ファントムX", "2019",
                 "スコッティキャメロン ファントムX パター",
@@ -2109,7 +2122,7 @@ CATALOG: list[DriverModel] = [
                 ["newport|ニューポート"],
                 _WP_EXC + ["specialselect|スペシャルセレクト",
                            "superselect|スーパーセレクト", "studioselect|スタジオセレクト",
-                           "phantom|ファントム", "futura|フューチュラ"],
+                           "phantom|ファントム", "futura|フューチュラ", _OC],
                 category="putter"),
     DriverModel("pt_od_whitehotog", "オデッセイ", "ホワイトホット OG", "2021",
                 "オデッセイ ホワイトホット OG パター",
@@ -2129,7 +2142,7 @@ CATALOG: list[DriverModel] = [
                 mixed_median=True),
     DriverModel("pt_od_trihot5k", "オデッセイ", "トライホット 5K", "2022",
                 "オデッセイ トライホット 5K パター",
-                ["trihot|トライホット"], _WP_EXC, category="putter"),
+                ["trihot|トライホット"], _WP_EXC + [_S2S], category="putter"),
     # 世代で二層に割れていたので分ける（初回集計の実売42件を実測）:
     #   無印スパイダーツアー(2017 RED/BLACK/TM1/TM2) = 8,000〜33,000
     #   スパイダーツアーX(2022〜)                  = 23,000〜60,000
@@ -2159,9 +2172,79 @@ CATALOG: list[DriverModel] = [
     DriverModel("pt_ping_sigma2", "ピン", "シグマ2", "2018",
                 "ピン シグマ2 パター", ["sigma2|シグマ2"], _WP_EXC, category="putter"),
     DriverModel("pt_lab_df3", "L.A.B. GOLF", "DF3", "2024",
-                "L.A.B. GOLF DF3 パター", ["df3"], _WP_EXC, category="putter"),
+                "L.A.B. GOLF DF3 パター", ["df3"], _WP_EXC + ["df3i"], category="putter",
+                club=_LAB),
     DriverModel("pt_lab_mezz1", "L.A.B. GOLF", "Mezz.1 MAX", "2022",
-                "L.A.B. GOLF Mezz.1 MAX パター", ["mezz"], _WP_EXC, category="putter"),
+                "L.A.B. GOLF Mezz.1 MAX パター", ["mezz"], _WP_EXC, category="putter",
+                club=_LAB),
+
+    # ---- ゼロトルク系（2026-11-04追加・ユーザー指示） ----
+    # 実測（メルカリ120日・完品の実売本数/中央値。scripts/zt_putter_comps.sh）:
+    #   Spider ZT 86本 42,000 / Spider ZT MAX 43本 50,000 / OZ.1 44本 70,000 /
+    #   Ai-DUAL S2S 78本 31,500 / キャメロン OC 101本 67,000 / Evnroll ZERO 65本 50,000
+    #   薄い（mixed_median=True で割安候補を出さず回転だけ見る）:
+    #   S2S TRI-HOT 12本 62,100 / Ai-ONE S2S 10〜14本 21,000〜24,500 /
+    #   LINK.1 9本 61,500 / DF2.1 3本 47,000 / LINK.2 2本 73,000 / DF3i 2本 93,283
+    # 見送り: VZN.1i（実売0）/ Mezz.2（実売0）/ ベティナルディ アンチドート（測定できず）/
+    #   PING PLD Ally Blue Onset（実売45件は全て通常版 ALLY BLUE 4。オンセット版は国内に無い）
+    # ⚠ Square 2 Square は**世代で値段が倍違う**（Ai-ONE 2万 / Ai-DUAL 3万 / TRI-HOT 6万）。
+    #   世代語を書かない「Square 2 Square JAILBIRD」はどのキーにも入れない（二重計上より取りこぼし）
+    # ⚠ キャメロン OC は**純正グリップ「マタドール OC」単品が5,500〜15,000円で売れている**
+    DriverModel("pt_lab_df3i", "L.A.B. GOLF", "DF3i", "2026",
+                "L.A.B. GOLF DF3i パター", [_LAB, "df3i"], _WP_EXC,
+                category="putter", club=_LAB,
+                mixed_median=True),
+    DriverModel("pt_lab_oz1", "L.A.B. GOLF", "OZ.1 / OZ.1i", "2024",
+                "L.A.B. GOLF OZ.1 パター", [_LAB, "oz1"],
+                # 「イーブンロール ZERO Z1」は compact で "zeroz1" になり oz1 を含む
+                _WP_EXC + ["zeroz1|evnroll|イーブンロール"],
+                category="putter", club=_LAB),
+    DriverModel("pt_lab_link1", "L.A.B. GOLF", "LINK.1", "2023",
+                "L.A.B. GOLF LINK.1 パター", [_LAB, "link1"], _WP_EXC,
+                category="putter", club=_LAB,
+                mixed_median=True),
+    DriverModel("pt_lab_link2", "L.A.B. GOLF", "LINK.2.1 / LINK.2.2", "2026",
+                "L.A.B. GOLF LINK.2 パター", [_LAB, "link2"], _WP_EXC,
+                category="putter", club=_LAB,
+                mixed_median=True),
+    DriverModel("pt_lab_df21", "L.A.B. GOLF", "DF2.1", "2021",
+                "L.A.B. GOLF DF2.1 パター", [_LAB, "df21|directedforce"], _WP_EXC,
+                category="putter", club=_LAB, mixed_median=True),
+    DriverModel("pt_od_s2s_aidual", "オデッセイ", "Ai-DUAL Square 2 Square", "2025",
+                "オデッセイ Ai-DUAL Square 2 Square パター",
+                [_S2S, "aidual|aiデュアル"], _WP_EXC + ["trihot|トライホット"],
+                category="putter", club=_S2S),
+    # 国内発売は2026-04だが、題名に「2025」と書く個体がある（米国モデル年）
+    DriverModel("pt_od_s2s_trihot", "オデッセイ", "Square 2 Square TRI-HOT", "2025",
+                "オデッセイ Square 2 Square TRI-HOT パター",
+                [_S2S, "trihot|トライホット"], _WP_EXC, category="putter",
+                club=_S2S, mixed_median=True),
+    # ⚠ Ai-ONE の「ミルド クルーザー ジェイルバード」「ジェイルバード ミニ」は
+    #   S2S ではない（通常のネック）。S2S 表記を必須にしているのはそのため
+    DriverModel("pt_od_s2s_aione", "オデッセイ", "Ai-ONE Square 2 Square", "2025",
+                "オデッセイ Ai-ONE Square 2 Square パター",
+                [_S2S, "aione|aiワン|エーアイワン"],
+                _WP_EXC + ["aidual|aiデュアル", "trihot|トライホット"],
+                category="putter", club=_S2S, mixed_median=True),
+    DriverModel("pt_tm_spiderzt", "テーラーメイド", "スパイダー ZT", "2025",
+                "テーラーメイド スパイダー ZT パター",
+                ["spider|スパイダー", "zt"], _WP_EXC + ["ztmax|ztマックス"],
+                category="putter", club="zt"),
+    DriverModel("pt_tm_spiderztmax", "テーラーメイド", "スパイダー ZT MAX", "2026",
+                "テーラーメイド スパイダー ZT MAX パター",
+                ["spider|スパイダー", "ztmax|ztマックス"], _WP_EXC, category="putter",
+                club="zt"),
+    DriverModel("pt_sc_oc", "スコッティキャメロン", "OC（ファントム/ファストバック）", "2025",
+                "スコッティキャメロン OC パター",
+                # 種別語に OC 自体は使わない（グリップ「マタドール OC」単品が通るため）。
+                # ヘッド名（ファントム/ファストバック）があるときだけ「パター」無しを認める
+                ["scotty|cameron|キャメロン|fastback|ファストバック|studiostyle", _OC],
+                _WP_EXC + ["新品抜き|グリップのみ|グリップ単品"], category="putter",
+                club="phantom|ファントム|fastback|ファストバック"),
+    DriverModel("pt_evnroll_zero", "イーブンロール", "ZERO", "2025",
+                "Evnroll ZERO パター",
+                ["evnroll|evenroll|イーブンロール", "zero|ゼロ"], _WP_EXC,
+                category="putter", club="evnroll|evenroll|イーブンロール"),
     # ベティナルディはモデル数が多く単価が5,000〜300,000と大きく割れる（限定モデルが
     # 混ざる）。回転は使えるので行は残し、**割安率による候補生成だけ止める**
     DriverModel("pt_bettinardi", "ベティナルディ", "BETTINARDI（総称）", "—",
